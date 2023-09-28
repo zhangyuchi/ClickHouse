@@ -249,7 +249,7 @@ JoinKeyRow::JoinKeyRow(const FullMergeJoinCursor & cursor, size_t pos)
         new_col->insertFrom(*col, pos);
         row.push_back(std::move(new_col));
     }
-    if (auto asof_column = cursor.getAsofColumn())
+    if (const auto * asof_column = cursor.getAsofColumn())
     {
         auto new_col = asof_column->cloneEmpty();
         new_col->insertFrom(*asof_column, pos);
@@ -325,7 +325,7 @@ FullMergeJoinCursor::FullMergeJoinCursor(const Block & sample_block_, const Sort
     : sample_block(sample_block_.cloneEmpty())
     , desc(description_)
 {
-    if (desc.size() == 0)
+    if (desc.empty())
         throw Exception(ErrorCodes::LOGICAL_ERROR, "Got empty sort description for FullMergeJoinCursor");
 
     if (is_asof)
@@ -385,7 +385,7 @@ String FullMergeJoinCursor::dump() const
             row_dump.push_back(val.dump());
         }
 
-        if (auto * asof_column = getAsofColumn())
+        if (const auto * asof_column = getAsofColumn())
         {
             asof_column->get(cursor.getRow(), val);
             row_dump.push_back(val.dump());
@@ -1030,7 +1030,6 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
                     asof_join_state.reset();
                     if (isLeft(kind))
                     {
-
                         /// return row with default values at right side
                         size_t i = 0;
                         for (const auto & col : left_columns)
@@ -1050,7 +1049,6 @@ MergeJoinAlgorithm::Status MergeJoinAlgorithm::asofJoin()
         {
             if (asof_join_state.hasMatch(left_cursor, asof_inequality))
             {
-
                 size_t i = 0;
                 for (const auto & col : left_columns)
                     result_cols[i++]->insertFrom(*col, lpos);
