@@ -267,10 +267,11 @@ bool JoinKeyRow::equals(const FullMergeJoinCursor & cursor) const
     if (row.empty())
         return false;
 
-    assert(this->row.size() == cursor->sort_columns_size);
+    assert(this->row.size() == cursor->sort_columns_size + 1);
     for (size_t i = 0; i < cursor->sort_columns_size; ++i)
     {
-        int cmp = this->row[i]->compareAt(0, cursor->getRow(), *(cursor->sort_columns[i]), cursor->desc[i].nulls_direction);
+        // int cmp = this->row[i]->compareAt(0, cursor->getRow(), *(cursor->sort_columns[i]), cursor->desc[i].nulls_direction);
+        int cmp = nullableCompareAt<true, true>(*this->row[i], *cursor->sort_columns[i], 0, cursor->getRow());
         if (cmp != 0)
             return false;
     }
