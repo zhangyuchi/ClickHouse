@@ -198,7 +198,7 @@ def generate_docker_directories(
                         version,
                     )
                     content[idx] = f'{arg_version}"{version}"'
-            df.write_text("\n".join(content))
+            df.write_text("\n".join(content) + "\n")
             if build_images:
                 git_runner(
                     f"docker build --network=host -t '{DOCKER_LIBRARY_NAME[image_type]}:"
