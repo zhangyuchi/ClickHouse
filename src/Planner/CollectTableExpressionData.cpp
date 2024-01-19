@@ -134,10 +134,10 @@ private:
             auto column_identifier = planner_context.getGlobalPlannerContext()->createColumnIdentifier(node);
             table_expression_data.addAliasColumnName(column_node.getColumnName(), column_identifier);
 
-            visitImpl(column_node.getExpressionOrThrow());
+            visit(column_node.getExpressionOrThrow());
         }
         else
-            visitImpl(node);
+            visit(node);
     }
 
     PlannerContext & planner_context;
