@@ -4843,13 +4843,13 @@ PartUUIDsPtr Context::getIgnoredPartUUIDs() const
 
 AsynchronousInsertQueue * Context::tryGetAsynchronousInsertQueue() const
 {
-    std::lock_guard lock(mutex);
+    SharedLockGuard lock(shared->mutex);
     return shared->async_insert_queue.get();
 }
 
 void Context::setAsynchronousInsertQueue(const std::shared_ptr<AsynchronousInsertQueue> & ptr)
 {
-    std::lock_guard lock(mutex);
+    SharedLockGuard lock(shared->mutex);
     using namespace std::chrono;
 
     if (std::chrono::milliseconds(settings.async_insert_busy_timeout_ms) == 0ms)
