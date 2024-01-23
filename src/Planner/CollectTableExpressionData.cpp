@@ -39,13 +39,16 @@ public:
         /// We can not modify such ColumnNode.
         if (auto * join_node = node->as<JoinNode>())
         {
+            planner_context.getOrCreateTableExpressionData(node);
+
             if (!join_node->isUsingJoinExpression())
                 return;
 
             auto & using_list = join_node->getJoinExpression()->as<ListNode&>();
             for (auto & using_element : using_list)
             {
-                auto & column_node = using_element->as<ColumnNode&>();
+                auto & column_node = using_element->as<ColumnNode &>();
+
                 /// This list contains column nodes from left and right tables.
                 auto & columns_from_subtrees = column_node.getExpressionOrThrow()->as<ListNode&>().getNodes();
 
@@ -87,7 +90,7 @@ public:
             }
 
             node = column_node->getExpression();
-            visitImpl(node);
+            visit(node);
             return;
         }
 
@@ -95,7 +98,8 @@ public:
             column_source_node_type != QueryTreeNodeType::TABLE_FUNCTION &&
             column_source_node_type != QueryTreeNodeType::QUERY &&
             column_source_node_type != QueryTreeNodeType::UNION &&
-            column_source_node_type != QueryTreeNodeType::ARRAY_JOIN)
+            column_source_node_type != QueryTreeNodeType::ARRAY_JOIN &&
+            column_source_node_type != QueryTreeNodeType::JOIN)
             throw Exception(ErrorCodes::LOGICAL_ERROR,
                 "Expected table, table function, array join, query or union column source. Actual {}",
                 column_source_node->formatASTForErrorMessage());
@@ -103,6 +107,16 @@ public:
         bool column_already_exists = table_expression_data.hasColumn(column_node->getColumnName());
         if (column_already_exists)
             return;
+
+        if (column_source_node_type == QueryTreeNodeType::JOIN)
+        {
+            /// For column nodes from JOIN USING clause we need to use column identifier from left table.
+            auto left_table_expression = column_source_node->as<JoinNode &>().getLeftTableExpression();
+            auto & left_table_expression_data = planner_context.getTableExpressionDataOrThrow(left_table_expression);
+            auto column_identifier = left_table_expression_data.getColumnIdentifierOrThrow(column_node->getColumnName());
+            table_expression_data.addColumn(column_node->getColumn(), column_identifier);
+            return;
+        }
 
         auto column_identifier = planner_context.getGlobalPlannerContext()->createColumnIdentifier(node);
         table_expression_data.addColumn(column_node->getColumn(), column_identifier);
@@ -123,7 +137,8 @@ private:
 
     void visitUsingColumn(QueryTreeNodePtr & node)
     {
-        auto & column_node = node->as<ColumnNode&>();
+        auto & column_node = node->as<ColumnNode &>();
+
         if (column_node.hasExpression())
         {
             auto & table_expression_data = planner_context.getOrCreateTableExpressionData(column_node.getColumnSource());
@@ -275,7 +290,27 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
     }
 
     CollectSourceColumnsVisitor collect_source_columns_visitor(*planner_context);
-    for (auto & node : query_node_typed.getChildren())
+
+    auto query_child_nodes = query_node_typed.getChildren();
+    /** Find projection node and put it to the end of nodes list
+      * to make sure that all columns from subqueries are collected before projection node is visited.
+      * It is important for column nodes that are originated from JOIN USING clause.
+      * Example:
+      * SELECT a FROM t1 JOIN t2 USING a;
+      * In that case a is from JOIN, but depends on t1.a and t2.a.
+      * We want to have table expression data for t1 and t2 to be ready before visiting `a` column node.
+      */
+    const auto & projection_node = query_node_typed.getProjectionNode();
+    for (size_t i = 0; i < query_child_nodes.size(); ++i)
+    {
+        if (query_child_nodes[i] == projection_node)
+        {
+            std::swap(query_child_nodes[i], query_child_nodes.back());
+            break;
+        }
+    }
+
+    for (auto & node : query_child_nodes)
     {
         if (!node || node == query_node_typed.getPrewhere())
             continue;
