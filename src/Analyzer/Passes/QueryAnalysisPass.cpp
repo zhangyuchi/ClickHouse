@@ -3261,10 +3261,17 @@ QueryTreeNodePtr QueryAnalyzer::tryResolveIdentifierFromJoin(const IdentifierLoo
 
         if (using_column_node_it != join_using_column_name_to_column_node.end())
         {
-            /// Result column is from JOIN node itself
-            auto result_column_node = using_column_node_it->second->clone();
-            /// Do not need expression in column in projection, we have it in USING
-            result_column_node->as<ColumnNode &>().getExpression() = nullptr;
+            JoinTableSide using_column_inner_column_table_side = isRight(join_kind) ? JoinTableSide::Right : JoinTableSide::Left;
+            auto & using_column_node = using_column_node_it->second->as<ColumnNode &>();
+            auto & using_expression_list = using_column_node.getExpression()->as<ListNode &>();
+
+            size_t inner_column_node_index = using_column_inner_column_table_side == JoinTableSide::Left ? 0 : 1;
+            const auto & inner_column_node = using_expression_list.getNodes().at(inner_column_node_index);
+
+            auto result_column_node = inner_column_node->clone();
+            auto & result_column = result_column_node->as<ColumnNode &>();
+            result_column.setColumnType(using_column_node.getColumnType());
+
             resolved_identifier = std::move(result_column_node);
         }
         else if (left_resolved_identifier->isEqual(*right_resolved_identifier, IQueryTreeNode::CompareOptions{.compare_aliases = false}))

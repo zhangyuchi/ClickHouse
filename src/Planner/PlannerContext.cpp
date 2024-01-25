@@ -31,7 +31,7 @@ const ColumnIdentifier & GlobalPlannerContext::createColumnIdentifier(const Name
         column_identifier = column.name;
 
     auto [it, inserted] = column_identifiers.emplace(column_identifier);
-    chassert(inserted);
+    assert(inserted);
 
     return *it;
 }

@@ -39,16 +39,13 @@ public:
         /// We can not modify such ColumnNode.
         if (auto * join_node = node->as<JoinNode>())
         {
-            planner_context.getOrCreateTableExpressionData(node);
-
             if (!join_node->isUsingJoinExpression())
                 return;
 
             auto & using_list = join_node->getJoinExpression()->as<ListNode&>();
             for (auto & using_element : using_list)
             {
-                auto & column_node = using_element->as<ColumnNode &>();
-
+                auto & column_node = using_element->as<ColumnNode&>();
                 /// This list contains column nodes from left and right tables.
                 auto & columns_from_subtrees = column_node.getExpressionOrThrow()->as<ListNode&>().getNodes();
 
@@ -90,7 +87,7 @@ public:
             }
 
             node = column_node->getExpression();
-            visit(node);
+            visitImpl(node);
             return;
         }
 
@@ -98,8 +95,7 @@ public:
             column_source_node_type != QueryTreeNodeType::TABLE_FUNCTION &&
             column_source_node_type != QueryTreeNodeType::QUERY &&
             column_source_node_type != QueryTreeNodeType::UNION &&
-            column_source_node_type != QueryTreeNodeType::ARRAY_JOIN &&
-            column_source_node_type != QueryTreeNodeType::JOIN)
+            column_source_node_type != QueryTreeNodeType::ARRAY_JOIN)
             throw Exception(ErrorCodes::LOGICAL_ERROR,
                 "Expected table, table function, array join, query or union column source. Actual {}",
                 column_source_node->formatASTForErrorMessage());
@@ -107,7 +103,6 @@ public:
         bool column_already_exists = table_expression_data.hasColumn(column_node->getColumnName());
         if (column_already_exists)
             return;
-
 
         auto column_identifier = planner_context.getGlobalPlannerContext()->createColumnIdentifier(node);
         table_expression_data.addColumn(column_node->getColumn(), column_identifier);
@@ -128,8 +123,7 @@ private:
 
     void visitUsingColumn(QueryTreeNodePtr & node)
     {
-        auto & column_node = node->as<ColumnNode &>();
-
+        auto & column_node = node->as<ColumnNode&>();
         if (column_node.hasExpression())
         {
             auto & table_expression_data = planner_context.getOrCreateTableExpressionData(column_node.getColumnSource());
@@ -281,7 +275,6 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
     }
 
     CollectSourceColumnsVisitor collect_source_columns_visitor(*planner_context);
-
     for (auto & node : query_node_typed.getChildren())
     {
         if (!node || node == query_node_typed.getPrewhere())
