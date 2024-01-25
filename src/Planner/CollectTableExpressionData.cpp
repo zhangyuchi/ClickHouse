@@ -108,15 +108,6 @@ public:
         if (column_already_exists)
             return;
 
-        if (column_source_node_type == QueryTreeNodeType::JOIN)
-        {
-            /// For column nodes from JOIN USING clause we need to use column identifier from left table.
-            auto left_table_expression = column_source_node->as<JoinNode &>().getLeftTableExpression();
-            auto & left_table_expression_data = planner_context.getTableExpressionDataOrThrow(left_table_expression);
-            auto column_identifier = left_table_expression_data.getColumnIdentifierOrThrow(column_node->getColumnName());
-            table_expression_data.addColumn(column_node->getColumn(), column_identifier);
-            return;
-        }
 
         auto column_identifier = planner_context.getGlobalPlannerContext()->createColumnIdentifier(node);
         table_expression_data.addColumn(column_node->getColumn(), column_identifier);
@@ -291,26 +282,7 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
 
     CollectSourceColumnsVisitor collect_source_columns_visitor(*planner_context);
 
-    auto query_child_nodes = query_node_typed.getChildren();
-    /** Find projection node and put it to the end of nodes list
-      * to make sure that all columns from subqueries are collected before projection node is visited.
-      * It is important for column nodes that are originated from JOIN USING clause.
-      * Example:
-      * SELECT a FROM t1 JOIN t2 USING a;
-      * In that case a is from JOIN, but depends on t1.a and t2.a.
-      * We want to have table expression data for t1 and t2 to be ready before visiting `a` column node.
-      */
-    const auto & projection_node = query_node_typed.getProjectionNode();
-    for (size_t i = 0; i < query_child_nodes.size(); ++i)
-    {
-        if (query_child_nodes[i] == projection_node)
-        {
-            std::swap(query_child_nodes[i], query_child_nodes.back());
-            break;
-        }
-    }
-
-    for (auto & node : query_child_nodes)
+    for (auto & node : query_node_typed.getChildren())
     {
         if (!node || node == query_node_typed.getPrewhere())
             continue;

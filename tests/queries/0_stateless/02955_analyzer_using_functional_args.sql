@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+DROP TABLE IF EXISTS t3;
+
 CREATE TABLE t1 (x Int16, y Int64 ALIAS x + x * 2, z ALIAS x + 1, s String) ENGINE=MergeTree() ORDER BY x;
 CREATE TABLE t2 (y Int128, z Int16) ENGINE=MergeTree() ORDER BY y;
 
@@ -23,6 +27,7 @@ SELECT * FROM t3 INNER JOIN t1 USING (y, z) SETTINGS allow_experimental_analyzer
 SELECT s FROM t1 INNER JOIN t3 USING (y);
 
 -- {echoOn }
+-- USING alias column contains default in old analyzer (but both queries below should have the same result)
 SELECT y * 2, s || 'a' FROM t1 FULL JOIN t2 USING (y) ORDER BY ALL SETTINGS allow_experimental_analyzer = 1;
 SELECT y * 2, s || 'a' FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2) t2 USING (y) ORDER BY ALL;
 
@@ -35,3 +40,4 @@ SELECT s FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2) t2 USING (y)
 
 DROP TABLE IF EXISTS t1;
 DROP TABLE IF EXISTS t2;
+DROP TABLE IF EXISTS t3;

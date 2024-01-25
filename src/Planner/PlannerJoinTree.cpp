@@ -1214,6 +1214,8 @@ JoinTreeQueryPlan buildQueryPlanForJoinNode(const QueryTreeNodePtr & join_table_
 
     table_join->setIsJoinWithConstant(join_constant != std::nullopt);
 
+    std::unordered_map<std::string, ColumnIdentifier> using_projection_mapping;
+
     if (join_node.isOnJoinExpression())
     {
         const auto & join_clauses = join_clauses_and_actions.join_clauses;
@@ -1317,6 +1319,9 @@ JoinTreeQueryPlan buildQueryPlanForJoinNode(const QueryTreeNodePtr & join_table_
 
             const auto & left_column_identifier = planner_context->getColumnNodeIdentifierOrThrow(using_join_left_join_column_node);
             const auto & right_column_identifier = planner_context->getColumnNodeIdentifierOrThrow(using_join_right_join_column_node);
+
+            const auto & column_identifier = isRight(join_kind) && outer_scope_columns.contains(right_column_identifier) ? right_column_identifier : left_column_identifier;
+            using_projection_mapping[column_identifier] = join_using_column_node.getColumnName();
 
             table_join_clause.key_names_left.push_back(left_column_identifier);
             table_join_clause.key_names_right.push_back(right_column_identifier);
@@ -1467,7 +1472,7 @@ JoinTreeQueryPlan buildQueryPlanForJoinNode(const QueryTreeNodePtr & join_table_
             || !global_planner_context->hasColumnIdentifier(output->result_name))
             continue;
 
-        if (!outer_scope_columns.contains(output->result_name))
+        if (!outer_scope_columns.contains(output->result_name) && !using_projection_mapping.contains(output->result_name))
         {
             if (!first_skipped_column_node_index)
                 first_skipped_column_node_index = i;
@@ -1490,6 +1495,30 @@ JoinTreeQueryPlan buildQueryPlanForJoinNode(const QueryTreeNodePtr & join_table_
     auto drop_unused_columns_after_join_transform_step = std::make_unique<ExpressionStep>(result_plan.getCurrentDataStream(), std::move(drop_unused_columns_after_join_actions_dag));
     drop_unused_columns_after_join_transform_step->setStepDescription("DROP unused columns after JOIN");
     result_plan.addStep(std::move(drop_unused_columns_after_join_transform_step));
+
+
+    if (!using_projection_mapping.empty())
+    {
+        auto using_projection_actions_dag = std::make_shared<ActionsDAG>(result_plan.getCurrentDataStream().header.getColumnsWithTypeAndName());
+        for (const auto * input_node : using_projection_actions_dag->getInputs())
+        {
+            if (auto it = using_projection_mapping.find(input_node->result_name); it != using_projection_mapping.end())
+            {
+                const auto & column_name = it->second;
+                const auto & alias_output = using_projection_actions_dag->addAlias(*input_node, column_name);
+                using_projection_actions_dag->addOrReplaceInOutputs(alias_output);
+                using_projection_actions_dag->addOrReplaceInOutputs(*input_node);
+            }
+            else
+            {
+                using_projection_actions_dag->addOrReplaceInOutputs(*input_node);
+            }
+        }
+
+        auto using_projection_step = std::make_unique<ExpressionStep>(result_plan.getCurrentDataStream(), std::move(using_projection_actions_dag));
+        using_projection_step->setStepDescription("Projection for USING");
+        result_plan.addStep(std::move(using_projection_step));
+    }
 
     for (const auto & right_join_tree_query_plan_row_policy : right_join_tree_query_plan.used_row_policies)
         left_join_tree_query_plan.used_row_policies.insert(right_join_tree_query_plan_row_policy);
