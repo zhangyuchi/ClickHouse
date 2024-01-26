@@ -3272,6 +3272,10 @@ QueryTreeNodePtr QueryAnalyzer::tryResolveIdentifierFromJoin(const IdentifierLoo
             auto & result_column = result_column_node->as<ColumnNode &>();
             result_column.setColumnType(using_column_node.getColumnType());
 
+            /// Reset the expression for the column in the projection (or any other section outside of JOIN).
+            /// The expression is calculated beforehand for JOIN USING.
+            result_column.getExpression() = nullptr;
+
             resolved_identifier = std::move(result_column_node);
         }
         else if (left_resolved_identifier->isEqual(*right_resolved_identifier, IQueryTreeNode::CompareOptions{.compare_aliases = false}))

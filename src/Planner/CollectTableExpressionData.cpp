@@ -91,6 +91,11 @@ public:
             return;
         }
 
+        /// JoinNode doesn't have its dedicated identifiers,
+        /// we apply projection actions from outer scope to columns from JOIN
+        if (column_source_node_type == QueryTreeNodeType::JOIN)
+            return;
+
         if (column_source_node_type != QueryTreeNodeType::TABLE &&
             column_source_node_type != QueryTreeNodeType::TABLE_FUNCTION &&
             column_source_node_type != QueryTreeNodeType::QUERY &&
@@ -123,7 +128,7 @@ private:
 
     void visitUsingColumn(QueryTreeNodePtr & node)
     {
-        auto & column_node = node->as<ColumnNode&>();
+        auto & column_node = node->as<ColumnNode &>();
         if (column_node.hasExpression())
         {
             auto & table_expression_data = planner_context.getOrCreateTableExpressionData(column_node.getColumnSource());
@@ -275,9 +280,20 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
     }
 
     CollectSourceColumnsVisitor collect_source_columns_visitor(*planner_context);
+
+    /** Visit the join tree node first to ensure that all columns in subtrees are collected before the projection node is visited.
+      * This is crucial for column nodes that originate from the JOIN USING clause.
+      * For example:
+      * SELECT a FROM t1 JOIN t2 USING a ORDER BY a;
+      * In this case, if `a` is an ALIAS column, the expression for it will be calculated from the USING clause.
+      * Therefore, the table expression data for t1 and t2 should be prepared before visiting the `a` column node in projection or ORDER BY.
+      */
+    auto & join_tree_node = query_node_typed.getJoinTree();
+    collect_source_columns_visitor.visit(join_tree_node);
+
     for (auto & node : query_node_typed.getChildren())
     {
-        if (!node || node == query_node_typed.getPrewhere())
+        if (!node || node == query_node_typed.getPrewhere() || node == join_tree_node)
             continue;
 
         auto node_type = node->getNodeType();
