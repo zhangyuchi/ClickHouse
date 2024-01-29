@@ -1350,6 +1350,7 @@ private:
         const NamesAndTypes & matched_columns,
         const IdentifierResolveScope & scope);
 
+    void updateMatchedColumnsFromJoinUsing(QueryTreeNodesWithNames & result_matched_column_nodes_with_names, IdentifierResolveScope & scope);
     QueryTreeNodesWithNames resolveQualifiedMatcher(QueryTreeNodePtr & matcher_node, IdentifierResolveScope & scope);
 
     QueryTreeNodesWithNames resolveUnqualifiedMatcher(QueryTreeNodePtr & matcher_node, IdentifierResolveScope & scope);
@@ -3969,6 +3970,65 @@ QueryAnalyzer::QueryTreeNodesWithNames QueryAnalyzer::getMatchedColumnNodesWithN
     return matched_column_nodes_with_names;
 }
 
+/// Columns that resolved from matcher can also match columns from JOIN USING.
+/// In that case we update type to type of column in USING section.
+/// TODO: It's not completely correct for qualified matchers, so t1.* should be resolved to left table column type.
+/// But in planner we do not distinguish such cases.
+void QueryAnalyzer::updateMatchedColumnsFromJoinUsing(
+    QueryTreeNodesWithNames & result_matched_column_nodes_with_names,
+    IdentifierResolveScope & scope)
+{
+    auto * nearest_query_scope = scope.getNearestQueryScope();
+    auto * nearest_query_scope_query_node = nearest_query_scope ? nearest_query_scope->scope_node->as<QueryNode>() : nullptr;
+
+    /// If there are no parent query scope or query scope does not have join tree
+    if (!nearest_query_scope_query_node || !nearest_query_scope_query_node->getJoinTree())
+    {
+        throw Exception(ErrorCodes::UNSUPPORTED_METHOD,
+            "There are no table sources. In scope {}",
+            scope.scope_node->formatASTForErrorMessage());
+    }
+
+    const auto & join_tree = nearest_query_scope_query_node->getJoinTree();
+
+    const auto * join_node = join_tree->as<JoinNode>();
+    if (join_node && join_node->isUsingJoinExpression())
+    {
+        const auto & join_using_list = join_node->getJoinExpression()->as<ListNode &>();
+        const auto & join_using_nodes = join_using_list.getNodes();
+
+        for (auto & [matched_column_node, _] : result_matched_column_nodes_with_names)
+        {
+            auto & matched_column_node_typed = matched_column_node->as<ColumnNode &>();
+            const auto & matched_column_name = matched_column_node_typed.getColumnName();
+
+            for (const auto & join_using_node : join_using_nodes)
+            {
+                auto & join_using_column_node = join_using_node->as<ColumnNode &>();
+                const auto & join_using_column_name = join_using_column_node.getColumnName();
+
+                if (matched_column_name != join_using_column_name)
+                    continue;
+
+                const auto & join_using_column_nodes_list = join_using_column_node.getExpressionOrThrow()->as<ListNode &>();
+                const auto & join_using_column_nodes = join_using_column_nodes_list.getNodes();
+
+                if (isRight(join_node->getKind()))
+                    matched_column_node = join_using_column_nodes.at(1);
+                else
+                    matched_column_node = join_using_column_nodes.at(0);
+
+                matched_column_node = matched_column_node->clone();
+                matched_column_node->as<ColumnNode &>().setColumnType(join_using_column_node.getResultType());
+
+                /// Reset the expression for the column in the projection (or any other section of the query).
+                auto & column_node = matched_column_node->as<ColumnNode &>();
+                column_node.setExpression(nullptr);
+            }
+        }
+    }
+}
+
 /** Resolve qualified tree matcher.
   *
   * First try to match qualified identifier to expression. If qualified identifier matched expression node then
@@ -4063,7 +4123,7 @@ QueryAnalyzer::QueryTreeNodesWithNames QueryAnalyzer::resolveQualifiedMatcher(Qu
     if (table_expression_query_node || table_expression_union_node)
     {
         matched_columns = table_expression_query_node ? table_expression_query_node->getProjectionColumns()
-                                                              : table_expression_union_node->computeProjectionColumns();
+                                                      : table_expression_union_node->computeProjectionColumns();
     }
     else if (table_expression_table_node || table_expression_table_function_node)
     {
@@ -4086,6 +4146,7 @@ QueryAnalyzer::QueryTreeNodesWithNames QueryAnalyzer::resolveQualifiedMatcher(Qu
         matched_columns,
         scope);
 
+    updateMatchedColumnsFromJoinUsing(result_matched_column_nodes_with_names, scope);
     return result_matched_column_nodes_with_names;
 }
 
