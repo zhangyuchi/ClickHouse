@@ -289,7 +289,8 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
       * Therefore, the table expression data for t1 and t2 should be prepared before visiting the `a` column node in projection or ORDER BY.
       */
     auto & join_tree_node = query_node_typed.getJoinTree();
-    collect_source_columns_visitor.visit(join_tree_node);
+    if (join_tree_node->getNodeType() != QueryTreeNodeType::QUERY && join_tree_node->getNodeType() != QueryTreeNodeType::UNION)
+        collect_source_columns_visitor.visit(join_tree_node);
 
     for (auto & node : query_node_typed.getChildren())
     {
