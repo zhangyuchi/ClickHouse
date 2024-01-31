@@ -40,6 +40,26 @@ SELECT (1, t1.*, t2.*) FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2
 (1,'',0,6666)
 (1,'a',3693,0)
 (1,'b',369,369)
+SELECT t1.z, t2.z, t3.z FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+1	0	43
+1	48	1
+124	124	1
+1232	0	1232
+SELECT * FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+126	0		0	42
+369	123	b	124	0
+3693	1231	a	0	1231
+6666	0		48	0
+SELECT t1.*, t2.*, t3.* FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+0		126	0	42
+0		6666	48	0
+123	b	369	124	0
+1231	a	3693	0	1231
+SELECT (1, t1.*, t2.*, t3.*) FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1 SETTINGS allow_experimental_analyzer = 1;
+(1,0,'',126,0,42)
+(1,0,'',6666,48,0)
+(1,123,'b',369,124,0)
+(1,1231,'a',3693,0,1231)
 SELECT y FROM t1 FULL JOIN t2 USING (y) ORDER BY ALL SETTINGS allow_experimental_analyzer = 1;
 369
 3693

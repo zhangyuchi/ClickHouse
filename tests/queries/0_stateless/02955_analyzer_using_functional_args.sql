@@ -40,6 +40,11 @@ SELECT (1, t1.*) FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2) t2 U
 SELECT (1, t1.*, t2.*) FROM t1 FULL JOIN t2 USING (y) ORDER BY ALL;
 SELECT (1, t1.*, t2.*) FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2) t2 USING (y) ORDER BY ALL;
 
+SELECT t1.z, t2.z, t3.z FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+SELECT * FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+SELECT t1.*, t2.*, t3.* FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1,2,3 SETTINGS allow_experimental_analyzer = 1;
+SELECT (1, t1.*, t2.*, t3.*) FROM t1 FULL JOIN t2 USING (y) FULL JOIN t3 USING (y) ORDER BY 1 SETTINGS allow_experimental_analyzer = 1;
+
 SELECT y FROM t1 FULL JOIN t2 USING (y) ORDER BY ALL SETTINGS allow_experimental_analyzer = 1;
 SELECT y FROM (SELECT s, y FROM t1) t1 FULL JOIN (SELECT y FROM t2) t2 USING (y) ORDER BY ALL;
 

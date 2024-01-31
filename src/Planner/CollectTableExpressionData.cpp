@@ -281,24 +281,27 @@ void collectTableExpressionData(QueryTreeNodePtr & query_node, PlannerContextPtr
 
     CollectSourceColumnsVisitor collect_source_columns_visitor(*planner_context);
 
-    /** Visit the join tree node first to ensure that all columns in subtrees are collected before the projection node is visited.
+    /** Visit the join nodes first to ensure that all columns in subtrees are collected before the projection node is visited.
       * This is crucial for column nodes that originate from the JOIN USING clause.
       * For example:
       * SELECT a FROM t1 JOIN t2 USING a ORDER BY a;
       * In this case, if `a` is an ALIAS column, the expression for it will be calculated from the USING clause.
       * Therefore, the table expression data for t1 and t2 should be prepared before visiting the `a` column node in projection or ORDER BY.
       */
-    auto & join_tree_node = query_node_typed.getJoinTree();
-    if (join_tree_node->getNodeType() != QueryTreeNodeType::QUERY && join_tree_node->getNodeType() != QueryTreeNodeType::UNION)
-        collect_source_columns_visitor.visit(join_tree_node);
+    auto table_expression_stack = buildTableExpressionsStack(query_node_typed.getJoinTree());
+    for (auto & table_expression_node : table_expression_stack)
+    {
+        if (table_expression_node->getNodeType() == QueryTreeNodeType::JOIN)
+            collect_source_columns_visitor.visit(table_expression_node);
+    }
 
     for (auto & node : query_node_typed.getChildren())
     {
-        if (!node || node == query_node_typed.getPrewhere() || node == join_tree_node)
+        if (!node || node == query_node_typed.getPrewhere())
             continue;
 
         auto node_type = node->getNodeType();
-        if (node_type == QueryTreeNodeType::QUERY || node_type == QueryTreeNodeType::UNION)
+        if (node_type == QueryTreeNodeType::QUERY || node_type == QueryTreeNodeType::UNION || node_type == QueryTreeNodeType::JOIN)
             continue;
 
         collect_source_columns_visitor.visit(node);
