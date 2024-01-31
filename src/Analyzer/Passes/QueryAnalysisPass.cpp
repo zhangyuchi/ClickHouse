@@ -4010,15 +4010,6 @@ void QueryAnalyzer::updateMatchedColumnsFromJoinUsing(
                 if (matched_column_name != join_using_column_name)
                     continue;
 
-                const auto & join_using_column_nodes_list = join_using_column_node.getExpressionOrThrow()->as<ListNode &>();
-                const auto & join_using_column_nodes = join_using_column_nodes_list.getNodes();
-
-                if (isRight(join_node->getKind()))
-                    matched_column_node = join_using_column_nodes.at(1);
-                else
-                    matched_column_node = join_using_column_nodes.at(0);
-
-                matched_column_node = matched_column_node->clone();
                 matched_column_node->as<ColumnNode &>().setColumnType(join_using_column_node.getResultType());
 
                 /// Reset the expression for the column in the projection (or any other section of the query).
