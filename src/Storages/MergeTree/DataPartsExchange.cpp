@@ -526,17 +526,17 @@ std::pair<MergeTreeData::MutableDataPartPtr, scope_guard> Fetcher::fetchSelected
         creds.setPassword(password);
     }
 
-    std::unique_ptr<PooledReadWriteBufferFromHTTP> in = std::make_unique<PooledReadWriteBufferFromHTTP>(
-        uri,
-        Poco::Net::HTTPRequest::HTTP_POST,
-        nullptr,
-        creds,
-        DBMS_DEFAULT_BUFFER_SIZE,
-        0, /* no redirects */
-        context->getCommonFetchesSessionFactory());
+    auto in = BuilderRWBufferFromHttp(uri)
+                  .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
+                  .withTimeouts(timeouts)
+                  .withDelayInit(false)
+                  .create(creds);
 
     int server_protocol_version = parse<int>(in->getResponseCookie("server_protocol_version", "0"));
     String remote_fs_metadata = parse<String>(in->getResponseCookie("remote_fs_metadata", ""));
+
+    LOG_TEST(log, "Downloading server_protocol_version {}", server_protocol_version);
+    LOG_TEST(log, "Downloading remote_fs_metadata {}", remote_fs_metadata);
 
     DiskPtr preffered_disk = disk;
 
@@ -557,11 +557,15 @@ std::pair<MergeTreeData::MutableDataPartPtr, scope_guard> Fetcher::fetchSelected
     if (server_protocol_version >= REPLICATION_PROTOCOL_VERSION_WITH_PARTS_SIZE)
     {
         readBinary(sum_files_size, *in);
+        LOG_TEST(log, "Downloading sum_files_size {}", sum_files_size);
+
         if (server_protocol_version >= REPLICATION_PROTOCOL_VERSION_WITH_PARTS_SIZE_AND_TTL_INFOS)
         {
             IMergeTreeDataPart::TTLInfos ttl_infos;
             String ttl_infos_string;
             readBinary(ttl_infos_string, *in);
+            LOG_TEST(log, "Downloading ttl_infos_string {}", ttl_infos_string);
+
             ReadBufferFromString ttl_infos_buffer(ttl_infos_string);
             assertString("ttl format version: 1\n", ttl_infos_buffer);
             ttl_infos.read(ttl_infos_buffer);
@@ -609,6 +613,8 @@ std::pair<MergeTreeData::MutableDataPartPtr, scope_guard> Fetcher::fetchSelected
     }
 
     UInt64 revision = parse<UInt64>(in->getResponseCookie("disk_revision", "0"));
+    LOG_TEST(log, "Downloading disk_revision {}", revision);
+
     if (revision)
         disk->syncRevision(revision);
 
@@ -622,15 +628,20 @@ std::pair<MergeTreeData::MutableDataPartPtr, scope_guard> Fetcher::fetchSelected
         String part_type_str;
         readStringBinary(part_type_str, *in);
         part_type.fromString(part_type_str);
+        LOG_TEST(log, "Downloading part_type_str {}", part_type_str);
     }
 
     UUID part_uuid = UUIDHelpers::Nil;
     if (server_protocol_version >= REPLICATION_PROTOCOL_VERSION_WITH_PARTS_UUID)
         readUUIDText(part_uuid, *in);
 
+    LOG_TEST(log, "Downloading part_uuid {}", part_uuid);
+
     size_t projections = 0;
     if (server_protocol_version >= REPLICATION_PROTOCOL_VERSION_WITH_PARTS_PROJECTION)
         readBinary(projections, *in);
+
+    LOG_TEST(log, "Downloading projections {}", projections);
 
     if (!remote_fs_metadata.empty())
     {
@@ -743,7 +754,7 @@ MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToMemory(
     const UUID & part_uuid,
     const StorageMetadataPtr & metadata_snapshot,
     ContextPtr context,
-    PooledReadWriteBufferFromHTTP & in,
+    ReadWriteBufferFromHTTP & in,
     size_t projections,
     bool is_projection,
     ThrottlerPtr throttler)
@@ -799,7 +810,7 @@ MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToMemory(
 void Fetcher::downloadBaseOrProjectionPartToDisk(
     const String & replica_path,
     const MutableDataPartStoragePtr & data_part_storage,
-    PooledReadWriteBufferFromHTTP & in,
+    ReadWriteBufferFromHTTP & in,
     OutputBufferGetter output_buffer_getter,
     MergeTreeData::DataPart::Checksums & checksums,
     ThrottlerPtr throttler,
@@ -807,6 +818,8 @@ void Fetcher::downloadBaseOrProjectionPartToDisk(
 {
     size_t files;
     readBinary(files, in);
+    LOG_DEBUG(log, "Downloading files {}", files);
+
 
     std::vector<std::unique_ptr<WriteBufferFromFileBase>> written_files;
 
@@ -829,6 +842,7 @@ void Fetcher::downloadBaseOrProjectionPartToDisk(
 
         written_files.emplace_back(output_buffer_getter(*data_part_storage, file_name, file_size));
         HashingWriteBuffer hashing_out(*written_files.back());
+        LOG_DEBUG(log, "Downloading no {} of {} file_name '{}' with size {}", i, files, file_name, file_size);
         copyDataWithThrottler(in, hashing_out, file_size, blocker.getCounter(), throttler);
         hashing_out.finalize();
 
@@ -872,7 +886,7 @@ MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToDisk(
     const String & tmp_prefix,
     DiskPtr disk,
     bool to_remote_disk,
-    PooledReadWriteBufferFromHTTP & in,
+    ReadWriteBufferFromHTTP & in,
     OutputBufferGetter output_buffer_getter,
     size_t projections,
     ThrottlerPtr throttler,
@@ -886,6 +900,7 @@ MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToDisk(
     if (to_remote_disk)
     {
         readStringBinary(part_id, in);
+        LOG_DEBUG(log, "Downloading part_id {}", part_id);
 
         if (!disk->supportZeroCopyReplication() || !disk->checkUniqueId(part_id))
             throw Exception(ErrorCodes::ZERO_COPY_REPLICATION_ERROR, "Part {} unique id {} doesn't exist on {} (with type {}).", part_name, part_id, disk->getName(), disk->getDataSourceDescription().toString());

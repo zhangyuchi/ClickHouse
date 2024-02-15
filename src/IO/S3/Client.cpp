@@ -963,6 +963,8 @@ PocoHTTPClientConfiguration ClientFactory::createClientConfiguration( // NOLINT
         enable_s3_requests_logging,
         for_disk_s3,
         context->getGlobalContext()->getSettingsRef().s3_use_adaptive_timeouts,
+        context->getGlobalContext()->getSettingsRef().s3_connection_pool_soft_limit,
+        context->getGlobalContext()->getSettingsRef().s3_connection_pool_warning_limit,
         get_request_throttler,
         put_request_throttler,
         error_report);

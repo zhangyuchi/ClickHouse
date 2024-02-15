@@ -501,5 +501,4 @@ bool HTTPClientSession::bypassProxy() const
 	else return false;
 }
 
-
 } } // namespace Poco::Net

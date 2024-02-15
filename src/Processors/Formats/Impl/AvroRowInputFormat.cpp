@@ -1016,7 +1016,7 @@ private:
                     http_basic_credentials.authenticate(request);
                 }
 
-                auto session = makePooledHTTPSession(url, timeouts, 1);
+                auto session = makeHTTPSession(url, timeouts);
                 session->sendRequest(request);
 
                 Poco::Net::HTTPResponse response;
@@ -1026,7 +1026,7 @@ private:
                 auto json_body = parser.parse(*response_body).extract<Poco::JSON::Object::Ptr>();
 
                 /// Response was fully read.
-                markSessionForReuse(session);
+                //markSessionForReuse(session);
 
                 auto schema = json_body->getValue<std::string>("schema");
                 LOG_TRACE((getLogger("AvroConfluentRowInputFormat")), "Successfully fetched schema id = {}\n{}", id, schema);

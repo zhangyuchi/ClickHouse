@@ -13,7 +13,7 @@
 #include <IO/ConnectionTimeouts.h>
 #include <IO/HTTPCommon.h>
 #include <IO/HTTPHeaderEntries.h>
-#include <IO/S3/SessionAwareIOStream.h>
+#include <IO/SessionAwareIOStream.h>
 
 #include <aws/core/client/ClientConfiguration.h>
 #include <aws/core/http/HttpClient.h>
@@ -50,12 +50,12 @@ struct PocoHTTPClientConfiguration : public Aws::Client::ClientConfiguration
     HTTPHeaderEntries extra_headers;
 
     /// Not a client parameter in terms of HTTP and we won't send it to the server. Used internally to determine when connection have to be re-established.
-    uint32_t http_keep_alive_timeout_ms = 0;
-    /// Zero means pooling will not be used.
-    size_t http_connection_pool_size = 0;
+    uint32_t http_keep_alive_timeout_ms = DEFAULT_HTTP_KEEP_ALIVE_TIMEOUT * 1000;
     /// See PoolBase::BehaviourOnLimit
-    bool wait_on_pool_size_limit = true;
     bool s3_use_adaptive_timeouts = true;
+
+    size_t connection_pool_soft_limit = 0;
+    size_t connection_pool_warning_limit = 0;
 
     std::function<void(const DB::ProxyConfiguration &)> error_report;
 
@@ -71,6 +71,8 @@ private:
         bool enable_s3_requests_logging_,
         bool for_disk_s3_,
         bool s3_use_adaptive_timeouts_,
+        size_t connection_pool_soft_limit_,
+        size_t connection_pool_warning_limit_,
         const ThrottlerPtr & get_request_throttler_,
         const ThrottlerPtr & put_request_throttler_,
         std::function<void(const DB::ProxyConfiguration &)> error_report_
@@ -96,12 +98,6 @@ public:
         body_stream = Aws::Utils::Stream::ResponseStream(
             Aws::New<SessionAwareIOStream<SessionPtr>>("http result streambuf", session_, incoming_stream.rdbuf())
         );
-    }
-
-    void SetResponseBody(Aws::IStream & incoming_stream, PooledHTTPSessionPtr & session_) /// NOLINT
-    {
-        body_stream = Aws::Utils::Stream::ResponseStream(
-            Aws::New<SessionAwareIOStream<PooledHTTPSessionPtr>>("http result streambuf", session_, incoming_stream.rdbuf()));
     }
 
     void SetResponseBody(std::string & response_body) /// NOLINT
@@ -163,7 +159,6 @@ private:
         EnumSize,
     };
 
-    template <bool pooled>
     void makeRequestInternalImpl(
         Aws::Http::HttpRequest & request,
         const DB::ProxyConfiguration & proxy_configuration,
@@ -197,8 +192,8 @@ protected:
 
     const HTTPHeaderEntries extra_headers;
 
-    size_t http_connection_pool_size = 0;
-    bool wait_on_pool_size_limit = true;
+    size_t connection_pool_soft_limit = 0;
+    size_t connection_pool_warning_limit = 0;
 };
 
 }
