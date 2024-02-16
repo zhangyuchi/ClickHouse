@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Common/ConnectionPool.h>
 #include <Common/ProfileEvents.h>
 #include <Common/CurrentMetrics.h>
 #include <Common/logger_useful.h>
@@ -30,13 +31,6 @@
 
 namespace DB
 {
-
-enum class MetricsType
-{
-    METRICS_FOR_S3_STORAGE,
-    METRICS_FOR_S3_DISK,
-    METRICS_FOR_HTTP,
-};
 
 struct HostResolvePoolMetrics
 {
@@ -110,16 +104,16 @@ public:
     void update();
     void reset();
 
-    static HostResolvePoolMetrics getMetrics(MetricsType type);
+    static HostResolvePoolMetrics getMetrics(ConnectionGroupType group_type);
 
 protected:
     HostResolvePool(String host_,
-                             MetricsType metrics_type,
-                             Poco::Timespan history_ = Poco::Timespan(DEFAULT_RESOLVE_TIME_HISTORY_SECONDS, 0));
+                    ConnectionGroupType group_type,
+                    Poco::Timespan history_ = Poco::Timespan(DEFAULT_RESOLVE_TIME_HISTORY_SECONDS, 0));
 
     using ResolveFunction = std::function<std::vector<Poco::Net::IPAddress> (const String & host)>;
     HostResolvePool(ResolveFunction && resolve_function_,
-                    MetricsType metrics_type,
+                    ConnectionGroupType group_type,
                     String host_,
                     Poco::Timespan history_);
 

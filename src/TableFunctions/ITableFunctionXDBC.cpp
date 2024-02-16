@@ -154,11 +154,12 @@ ColumnsDescription ITableFunctionXDBC::getActualTableStructure(ContextPtr contex
 
     Poco::Net::HTTPBasicCredentials credentials{};
     auto buf = BuilderRWBufferFromHttp(columns_info_uri)
-        .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
-        .withTimeouts(ConnectionTimeouts::getHTTPTimeouts(
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
+                   .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
+                   .withTimeouts(ConnectionTimeouts::getHTTPTimeouts(
                         context->getSettingsRef(),
                         context->getServerSettings().keep_alive_timeout))
-        .create(credentials);
+                   .create(credentials);
 
     std::string columns_info;
     readStringBinary(columns_info, *buf);

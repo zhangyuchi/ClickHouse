@@ -1016,7 +1016,7 @@ private:
                     http_basic_credentials.authenticate(request);
                 }
 
-                auto session = makeHTTPSession(url, timeouts);
+                auto session = makeHTTPSession(ConnectionGroupType::HTTP, url, timeouts);
                 session->sendRequest(request);
 
                 Poco::Net::HTTPResponse response;

@@ -1418,8 +1418,6 @@ void StorageS3::Configuration::connect(const ContextPtr & context)
     /// seems as we don't use it
     client_configuration.maxConnections = static_cast<unsigned>(request_settings.max_connections);
     client_configuration.connectTimeoutMs = local_settings.s3_connect_timeout_ms;
-    client_configuration.connection_pool_soft_limit = global_settings.s3_connection_pool_soft_limit;
-    client_configuration.connection_pool_warning_limit = global_settings.s3_connection_pool_warning_limit;
 
     auto headers = auth_settings.headers;
     if (!headers_from_ast.empty())

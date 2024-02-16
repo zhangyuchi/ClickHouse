@@ -54,9 +54,6 @@ struct PocoHTTPClientConfiguration : public Aws::Client::ClientConfiguration
     /// See PoolBase::BehaviourOnLimit
     bool s3_use_adaptive_timeouts = true;
 
-    size_t connection_pool_soft_limit = 0;
-    size_t connection_pool_warning_limit = 0;
-
     std::function<void(const DB::ProxyConfiguration &)> error_report;
 
     void updateSchemeAndRegion();
@@ -71,8 +68,6 @@ private:
         bool enable_s3_requests_logging_,
         bool for_disk_s3_,
         bool s3_use_adaptive_timeouts_,
-        size_t connection_pool_soft_limit_,
-        size_t connection_pool_warning_limit_,
         const ThrottlerPtr & get_request_throttler_,
         const ThrottlerPtr & put_request_throttler_,
         std::function<void(const DB::ProxyConfiguration &)> error_report_
@@ -191,9 +186,6 @@ protected:
     ThrottlerPtr put_request_throttler;
 
     const HTTPHeaderEntries extra_headers;
-
-    size_t connection_pool_soft_limit = 0;
-    size_t connection_pool_warning_limit = 0;
 };
 
 }

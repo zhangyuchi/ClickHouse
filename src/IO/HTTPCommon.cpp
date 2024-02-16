@@ -44,11 +44,12 @@ void setResponseDefaultHeaders(HTTPServerResponse & response, size_t keep_alive_
 }
 
 HTTPSessionPtr makeHTTPSession(
+    ConnectionGroupType group,
     const Poco::URI & uri,
     const ConnectionTimeouts & timeouts,
     ProxyConfiguration proxy_configuration)
 {
-    auto connection_pool = ConnectionPools::instance().getPool(uri, proxy_configuration);
+    auto connection_pool = ConnectionPools::instance().getPool(group, uri, proxy_configuration);
     return connection_pool->getConnection(timeouts);
 }
 

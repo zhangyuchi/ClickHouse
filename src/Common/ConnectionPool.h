@@ -5,7 +5,6 @@
 #include <Common/ProfileEvents.h>
 #include <Common/CurrentMetrics.h>
 #include <Common/ProxyConfiguration.h>
-#include <Common/HostResolvePool.h>
 #include <Common/logger_useful.h>
 
 #include <base/defines.h>
@@ -18,6 +17,13 @@
 
 namespace DB
 {
+
+enum class ConnectionGroupType
+{
+    DISK,
+    STORAGE,
+    HTTP,
+};
 
 struct ConnectionPoolMetrics
 {
@@ -35,8 +41,9 @@ struct ConnectionPoolMetrics
 
 struct ConnectionPoolLimits
 {
-    const size_t soft_limit = 1000;
-    const size_t warning_limit = 20000;
+    size_t soft_limit = 100;
+    size_t warning_limit = 1000;
+    size_t hard_limit = 10000;
 };
 
 class IEndpointConnectionPool
@@ -46,67 +53,37 @@ public:
     using Connection = Poco::Net::HTTPClientSession;
     using ConnectionPtr = std::shared_ptr<Poco::Net::HTTPClientSession>;
 
-    IEndpointConnectionPool(const IEndpointConnectionPool &) = delete;
-    IEndpointConnectionPool & operator=(const IEndpointConnectionPool &) = delete;
-
     /// can throw Poco::Net::Exception, DB::NetException, DB::Exception
     virtual ConnectionPtr getConnection(const ConnectionTimeouts & timeouts) = 0;
-    virtual void dropResolvedHostsCache() = 0;
+    virtual ConnectionPoolMetrics getMetrics() const = 0;
     virtual ~IEndpointConnectionPool() = default;
-
-    static ConnectionPoolMetrics getMetrics(DB::MetricsType type);
 
 protected:
     IEndpointConnectionPool() = default;
-};
 
+    IEndpointConnectionPool(const IEndpointConnectionPool &) = delete;
+    IEndpointConnectionPool & operator=(const IEndpointConnectionPool &) = delete;
+};
 
 class ConnectionPools
 {
-public:
-    struct EndpointPoolKey
-    {
-        String target_host;
-        UInt16 target_port;
-        bool is_target_https;
-        ProxyConfiguration proxy_config;
-        bool operator ==(const EndpointPoolKey & rhs) const;
-    };
-
 private:
-    struct Hasher
-    {
-        size_t operator()(const EndpointPoolKey & k) const;
-    };
-
-    std::mutex mutex;
-    std::unordered_map<EndpointPoolKey, IEndpointConnectionPool::Ptr, Hasher> endpoints_pool;
-
-protected:
-    ConnectionPools() = default;
-
-public:
+    ConnectionPools();
     ConnectionPools(const ConnectionPools &) = delete;
     ConnectionPools & operator=(const ConnectionPools &) = delete;
 
-    static ConnectionPools & instance()
-    {
-        static ConnectionPools instance;
-        return instance;
-    }
+public:
+    static ConnectionPools & instance();
 
-    bool declarePoolForS3Storage(const Poco::URI & uri, ProxyConfiguration proxy_configuration, ConnectionPoolLimits limits);
-    bool declarePoolForS3Disk(const Poco::URI & uri, ProxyConfiguration proxy_configuration, ConnectionPoolLimits limits);
-    bool declarePoolForHttp(const Poco::URI & uri, ProxyConfiguration proxy_configuration, ConnectionPoolLimits limits);
-    bool isPoolDeclared(const Poco::URI & uri, ProxyConfiguration proxy_configuration);
-    IEndpointConnectionPool::Ptr getPool(const Poco::URI & uri, ProxyConfiguration proxy_configuration);
-
+    void setLimits(ConnectionPoolLimits disk, ConnectionPoolLimits storage, ConnectionPoolLimits http);
     void dropResolvedHostsCache();
     void dropConnectionsCache();
 
-protected:
-    static bool useSecureConnection(const Poco::URI & uri, const ProxyConfiguration & proxy_configuration);
-    static std::tuple<std::string, UInt16, bool> getHostPortSecure(const Poco::URI & uri, const ProxyConfiguration & proxy_configuration);
+    IEndpointConnectionPool::Ptr getPool(ConnectionGroupType type, const Poco::URI & uri, const ProxyConfiguration & proxy_configuration);
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl;
 };
 
 }

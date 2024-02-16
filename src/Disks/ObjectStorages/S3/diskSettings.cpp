@@ -67,13 +67,8 @@ std::unique_ptr<S3::Client> getClient(
     client_configuration.requestTimeoutMs = config.getUInt(config_prefix + ".request_timeout_ms", S3::DEFAULT_REQUEST_TIMEOUT_MS);
     client_configuration.maxConnections = config.getUInt(config_prefix + ".max_connections", S3::DEFAULT_MAX_CONNECTIONS);
     client_configuration.endpointOverride = uri.endpoint;
-    client_configuration.http_keep_alive_timeout_ms = config.getUInt(
-        config_prefix + ".http_keep_alive_timeout_ms", DEFAULT_HTTP_KEEP_ALIVE_TIMEOUT * 1000);
-    client_configuration.connection_pool_soft_limit = config.getUInt(config_prefix + ".connection_pool_soft_limit", 1000);
-    client_configuration.connection_pool_warning_limit = config.getUInt(config_prefix + ".connection_pool_warning_limit", 10000);
     client_configuration.s3_use_adaptive_timeouts = config.getBool(
         config_prefix + ".use_adaptive_timeouts", client_configuration.s3_use_adaptive_timeouts);
-
 
     /*
      * Override proxy configuration for backwards compatibility with old configuration format.

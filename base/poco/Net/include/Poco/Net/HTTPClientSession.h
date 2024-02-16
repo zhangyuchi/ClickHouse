@@ -210,7 +210,7 @@ namespace Net
         void setKeepAliveTimeout(const Poco::Timespan & timeout);
         /// Sets the connection timeout for HTTP connections.
 
-        const Poco::Timespan & getKeepAliveTimeout() const;
+        Poco::Timespan getKeepAliveTimeout() const;
         /// Returns the connection timeout for HTTP connections.
 
         virtual std::ostream & sendRequest(HTTPRequest & request);
@@ -438,7 +438,7 @@ namespace Net
     }
 
 
-    inline const Poco::Timespan & HTTPClientSession::getKeepAliveTimeout() const
+    inline Poco::Timespan HTTPClientSession::getKeepAliveTimeout() const
     {
         return _keepAliveTimeout;
     }

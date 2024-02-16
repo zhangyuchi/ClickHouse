@@ -464,6 +464,7 @@ std::pair<Poco::URI, std::unique_ptr<ReadWriteBufferFromHTTP>> StorageURLSource:
         try
         {
             auto res = std::make_unique<ReadWriteBufferFromHTTP>(
+                ConnectionGroupType::STORAGE,
                 request_uri,
                 http_method,
                 proxy_config,
@@ -551,7 +552,7 @@ StorageURLSink::StorageURLSink(
     auto proxy_config = getProxyConfiguration(http_method);
 
     auto write_buffer = std::make_unique<WriteBufferFromHTTP>(
-        Poco::URI(uri), http_method, content_type, content_encoding, headers, timeouts, DBMS_DEFAULT_BUFFER_SIZE, proxy_config
+        ConnectionGroupType::STORAGE, Poco::URI(uri), http_method, content_type, content_encoding, headers, timeouts, DBMS_DEFAULT_BUFFER_SIZE, proxy_config
     );
 
     const auto & settings = context->getSettingsRef();
@@ -1329,6 +1330,7 @@ std::optional<time_t> IStorageURLBase::tryGetLastModificationTime(
     auto proxy_config = getProxyConfiguration(uri.getScheme());
 
     auto buf = BuilderRWBufferFromHttp(uri)
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withSetting(context->getReadSettings())
                    .withTimeouts(getHTTPTimeouts(context))
                    .withHostFilter(&context->getRemoteHostFilter())

@@ -72,8 +72,9 @@ bool ExternalDictionaryLibraryBridgeHelper::bridgeHandShake()
     try
     {
         auto buf = BuilderRWBufferFromHttp(getPingURI())
-                        .withTimeouts(http_timeouts)
-                        .create(credentials);
+                       .withConnectionGroup(ConnectionGroupType::STORAGE)
+                       .withTimeouts(http_timeouts)
+                       .create(credentials);
 
         readString(result, *buf);
     }
@@ -251,6 +252,7 @@ QueryPipeline ExternalDictionaryLibraryBridgeHelper::loadKeys(const Block & requ
 bool ExternalDictionaryLibraryBridgeHelper::executeRequest(const Poco::URI & uri, ReadWriteBufferFromHTTP::OutStreamCallback out_stream_callback) const
 {
     auto buf = BuilderRWBufferFromHttp(uri)
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(http_timeouts)
                    .withOutCallback(std::move(out_stream_callback))
@@ -265,6 +267,7 @@ bool ExternalDictionaryLibraryBridgeHelper::executeRequest(const Poco::URI & uri
 QueryPipeline ExternalDictionaryLibraryBridgeHelper::loadBase(const Poco::URI & uri, ReadWriteBufferFromHTTP::OutStreamCallback out_stream_callback)
 {
     auto read_buf_ptr = BuilderRWBufferFromHttp(uri)
+                            .withConnectionGroup(ConnectionGroupType::STORAGE)
                             .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                             .withSetting(getContext()->getReadSettings())
                             .withTimeouts(http_timeouts)

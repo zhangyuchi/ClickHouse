@@ -263,17 +263,17 @@
     M(RefreshableViews, "Number materialized views with periodic refreshing (REFRESH)") \
     M(RefreshingViews, "Number of materialized views currently executing a refresh") \
     \
-    M(S3StorageConnectionsStored, "Total count of sessions stored in the session pool for s3 storage hosts") \
-    M(S3StorageConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for s3 storage hosts") \
+    M(StorageConnectionsStored, "Total count of sessions stored in the session pool for storages") \
+    M(StorageConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for storages") \
     \
-    M(S3DiskConnectionsStored, "Total count of sessions stored in the session pool for s3 disk hosts") \
-    M(S3DiskConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for s3 disk hosts") \
+    M(DiskConnectionsStored, "Total count of sessions stored in the session pool for disks") \
+    M(DiskConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for disks") \
     \
     M(HttpConnectionsStored, "Total count of sessions stored in the session pool for http hosts") \
     M(HttpConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for http hosts") \
     \
-    M(S3StorageAddressesActive, "Total count of addresses which are used for creation connections") \
-    M(S3DiskAddressesActive, "Total count of addresses which are used for creation connections") \
+    M(StorageAddressesActive, "Total count of addresses which are used for creation connections for storages") \
+    M(DiskAddressesActive, "Total count of addresses which are used for creation connections for disks") \
     M(HttpAddressesActive, "Total count of addresses which are used for creation connections") \
 
 #ifdef APPLY_FOR_EXTERNAL_METRICS

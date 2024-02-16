@@ -153,7 +153,7 @@ ConnectionTimeouts getTimeouts(Poco::Net::HTTPClientSession & session)
             .withConnectionTimeout(session.getConnectionTimeout())
             .withSendTimeout(session.getSendTimeout())
             .withReceiveTimeout(session.getReceiveTimeout())
-            .withHttpKeepAliveTimeout(session.getKeepAliveTimeout());
+            .withHTTPKeepAliveTimeout(session.getKeepAliveTimeout());
 }
 
 }

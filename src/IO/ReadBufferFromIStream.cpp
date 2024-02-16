@@ -11,7 +11,7 @@ bool ReadBufferFromIStream::nextImpl()
         return false;
 
     chassert(internal_buffer.begin() != nullptr);
-    chassert(internal_buffer.size() > 0);
+    chassert(!internal_buffer.empty());
 
     size_t bytes_read = 0;
     char * read_to = internal_buffer.begin();

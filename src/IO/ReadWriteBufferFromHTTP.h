@@ -64,6 +64,7 @@ private:
         std::unique_ptr<ReadBuffer> transformToReadBuffer(size_t buf_size) &&;
     };
 
+    const ConnectionGroupType connection_group;
     const Poco::URI initial_uri;
     const std::string method;
     const ProxyConfiguration proxy_config;
@@ -139,6 +140,7 @@ public:
     using OutStreamCallback = std::function<void(std::ostream &)>;
 
     ReadWriteBufferFromHTTP(
+        const ConnectionGroupType & connection_group_,
         const Poco::URI & uri_,
         const std::string & method_,
         ProxyConfiguration proxy_config_,
@@ -190,7 +192,8 @@ using ReadWriteBufferFromHTTPPtr = std::unique_ptr<ReadWriteBufferFromHTTP>;
 class BuilderRWBufferFromHttp
 {
     Poco::URI uri;
-    std::string method;
+    std::string method = Poco::Net::HTTPRequest::HTTP_GET;
+    ConnectionGroupType connection_group = ConnectionGroupType::HTTP;
     ProxyConfiguration proxy_config{};
     ReadSettings read_settings{};
     ConnectionTimeouts timeouts{};
@@ -205,7 +208,6 @@ class BuilderRWBufferFromHttp
 public:
     BuilderRWBufferFromHttp(Poco::URI uri_)
         : uri(uri_)
-        , method(Poco::Net::HTTPRequest::HTTP_GET)
     {}
 
 #define setterMember(name, member) \
@@ -215,6 +217,7 @@ public:
         return *this; \
     }
 
+    setterMember(withConnectionGroup, connection_group)
     setterMember(withMethod, method)
     setterMember(withProxy, proxy_config)
     setterMember(withSetting, read_settings)
@@ -231,6 +234,7 @@ public:
     ReadWriteBufferFromHTTPPtr create(const Poco::Net::HTTPBasicCredentials & credentials_)
     {
         return std::make_unique<ReadWriteBufferFromHTTP>(
+            connection_group,
             uri,
             method,
             proxy_config,

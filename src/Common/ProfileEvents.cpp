@@ -635,21 +635,21 @@ The server successfully detected this situation and will download merged part fr
     M(ParallelReplicasAvailableCount, "Number of replicas available to execute a query with task-based parallel replicas") \
     M(ParallelReplicasUnavailableCount, "Number of replicas which was chosen, but found to be unavailable during query execution with task-based parallel replicas") \
     \
-    M(S3StorageConnectionsCreated, "Number of created s3 storage connections") \
-    M(S3StorageConnectionsReused, "Number of reused s3 storage connections") \
-    M(S3StorageConnectionsReset, "Number of reset s3 storage connections") \
-    M(S3StorageConnectionsPreserved, "Number of preserved s3 storage connections") \
-    M(S3StorageConnectionsExpired, "Number of expired s3 storage connections") \
-    M(S3StorageConnectionsErrors, "Number of cases when creation of a s3 storage connection failed") \
-    M(S3StorageConnectionsElapsedMicroseconds, "Total time spend on creating s3 storage connections")                                                                                                                                                                                                                                               \
+    M(StorageConnectionsCreated, "Number of created connections for storages") \
+    M(StorageConnectionsReused, "Number of reused connections for storages") \
+    M(StorageConnectionsReset, "Number of reset connections for storages") \
+    M(StorageConnectionsPreserved, "Number of preserved connections for storages") \
+    M(StorageConnectionsExpired, "Number of expired connections for storages") \
+    M(StorageConnectionsErrors, "Number of cases when creation of a connection for storage is failed") \
+    M(StorageConnectionsElapsedMicroseconds, "Total time spend on creating connections for storages")                                                                                                                                                                                                                                               \
     \
-    M(S3DiskConnectionsCreated, "Number of created s3 disk connections") \
-    M(S3DiskConnectionsReused, "Number of reused s3 disk connections") \
-    M(S3DiskConnectionsReset, "Number of reset s3 disk connections") \
-    M(S3DiskConnectionsPreserved, "Number of preserved s3 disk connections") \
-    M(S3DiskConnectionsExpired, "Number of expired s3 disk connections") \
-    M(S3DiskConnectionsErrors, "Number of cases when creation of a s3 disk connection failed") \
-    M(S3DiskConnectionsElapsedMicroseconds, "Total time spend on creating s3 disk connections") \
+    M(DiskConnectionsCreated, "Number of created connections for disk") \
+    M(DiskConnectionsReused, "Number of reused connections for disk") \
+    M(DiskConnectionsReset, "Number of reset connections for disk") \
+    M(DiskConnectionsPreserved, "Number of preserved connections for disk") \
+    M(DiskConnectionsExpired, "Number of expired connections for disk") \
+    M(DiskConnectionsErrors, "Number of cases when creation of a connection for disk is failed") \
+    M(DiskConnectionsElapsedMicroseconds, "Total time spend on creating connections for disk") \
     \
     M(HttpConnectionsCreated, "Number of created http connections") \
     M(HttpConnectionsReused, "Number of reused http connections") \
@@ -659,13 +659,13 @@ The server successfully detected this situation and will download merged part fr
     M(HttpConnectionsErrors, "Number of cases when creation of a http connection failed") \
     M(HttpConnectionsElapsedMicroseconds, "Total time spend on creating http connections") \
     \
-    M(S3StorageAddressesDiscovered, "Total count of new addresses in dns resolve results for s3 storage hosts") \
-    M(S3StorageAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for s3 storage hosts") \
-    M(S3StorageAddressesFailScored, "Total count of new addresses in dns resolve results for s3 storage hosts") \
+    M(StorageAddressesDiscovered, "Total count of new addresses in dns resolve results for storage hosts") \
+    M(StorageAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for storage hosts") \
+    M(StorageAddressesFailScored, "Total count of new addresses in dns resolve results for storage hosts") \
     \
-    M(S3DiskAddressesDiscovered, "Total count of new addresses in dns resolve results for s3 disk hosts") \
-    M(S3DiskAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for s3 disk hosts") \
-    M(S3DiskAddressesFailScored, "Total count of new addresses in dns resolve results for s3 disk hosts") \
+    M(DiskAddressesDiscovered, "Total count of new addresses in dns resolve results for disk hosts") \
+    M(DiskAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for disk hosts") \
+    M(DiskAddressesFailScored, "Total count of new addresses in dns resolve results for disk hosts") \
     \
     M(HttpAddressesDiscovered, "Total count of new addresses in dns resolve results for http hosts") \
     M(HttpAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for http hosts") \

@@ -58,6 +58,7 @@ void setResponseDefaultHeaders(HTTPServerResponse & response, size_t keep_alive_
 
 /// Create session object to perform requests and set required parameters.
 HTTPSessionPtr makeHTTPSession(
+    ConnectionGroupType group,
     const Poco::URI & uri,
     const ConnectionTimeouts & timeouts,
     ProxyConfiguration proxy_config = {}

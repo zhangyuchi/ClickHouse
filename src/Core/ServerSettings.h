@@ -117,8 +117,17 @@ namespace DB
     M(UInt32, max_database_replicated_create_table_thread_pool_size, 1, "The number of threads to create tables during replica recovery in DatabaseReplicated. Zero means number of threads equal number of cores.", 0) \
     M(String, default_replica_path, "/clickhouse/tables/{uuid}/{shard}", "The path to the table in ZooKeeper", 0) \
     M(String, default_replica_name, "{replica}", "The replica name in ZooKeeper", 0) \
+    M(UInt64, disk_connections_soft_limit, 1000, "Soft limit for all http connections made by disks. Connections above this limit have significantly shorter time to live.", 0) \
+    M(UInt64, disk_connections_warn_limit, 10000, "Warning limit for http connections made by disk. Warning massages are written to the logs if number of connections are higher than this limit.", 0) \
+    M(UInt64, disk_connections_hard_limit, 20000, "Hard limit for all http connections made by disks. Connections above this limit reset after use. Set to 0 to turn connection cache off.", 0) \
+    M(UInt64, storage_connections_soft_limit, 100, "Soft limit for all http connections made by user defined storages. Connections above this limit have significantly shorter time to live.", 0) \
+    M(UInt64, storage_connections_warn_limit, 1000, "Warning limit for http connections made by user defined storages. Warning massages are written to the logs if number of connections are higher than this limit.", 0) \
+    M(UInt64, storage_connections_hard_limit, 20000, "Hard limit for http connections made by user defined storages. Connections above this limit reset after use. Set to 0 to turn connection cache off.", 0) \
+    M(UInt64, http_connections_soft_limit, 100, "Soft limit for http connections which do not belong to any disk or storage. Connections above this limit have significantly shorter time to live.", 0) \
+    M(UInt64, http_connections_warn_limit, 1000, "Warning limit for http connections which do not belong to any disk or storage. Warning massages are written to the logs if number of connections are higher than this limit.", 0) \
+    M(UInt64, http_connections_hard_limit, 20000, "Hard limit for http connections which do not belong to any disk or storage. Connections above this limit reset after use. Set to 0 to turn connection cache off.", 0) \
 
-    /// If you add a setting which can be updated at runtime, please update 'changeable_settings' map in StorageSystemServerSettings.cpp
+/// If you add a setting which can be updated at runtime, please update 'changeable_settings' map in StorageSystemServerSettings.cpp
 
 DECLARE_SETTINGS_TRAITS(ServerSettingsTraits, SERVER_SETTINGS)
 

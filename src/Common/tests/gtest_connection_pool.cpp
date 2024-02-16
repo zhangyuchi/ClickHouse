@@ -1,5 +1,4 @@
 #include <IO/ReadWriteBufferFromHTTP.h>
-#include <IO/HTTPCommon.h>
 #include <Common/ConnectionPool.h>
 
 #include <Poco/URI.h>
@@ -11,8 +10,6 @@
 #include <Poco/Net/HTTPServerParams.h>
 #include <Poco/Net/HTTPRequestHandler.h>
 #include <Poco/Net/HTTPRequestHandlerFactory.h>
-
-#include <base/sleep.h>
 
 #include <thread>
 #include <gtest/gtest.h>
@@ -105,6 +102,9 @@ protected:
 
     void SetUp() override {
         timeouts = DB::ConnectionTimeouts();
+        DB::ConnectionPoolLimits def_limits{};
+        DB::ConnectionPools::instance().setLimits(def_limits, def_limits, def_limits);
+
         setSlowDown(0);
 
         DB::ConnectionPools::instance().dropConnectionsCache();
@@ -121,7 +121,7 @@ protected:
     DB::IEndpointConnectionPool::Ptr getPool()
     {
         auto uri = Poco::URI(getServerUrl());
-        return DB::ConnectionPools::instance().getPool(uri, DB::ProxyConfiguration{});
+        return DB::ConnectionPools::instance().getPool(DB::ConnectionGroupType::HTTP, uri, DB::ProxyConfiguration{});
     }
 
     std::string getServerUrl() const
@@ -133,15 +133,15 @@ protected:
     {
         server_data.reset();
         server_data.params = new Poco::Net::HTTPServerParams();
-        server_data.socket.reset(new Poco::Net::ServerSocket(server_data.port));
+        server_data.socket = std::make_unique<Poco::Net::ServerSocket>(server_data.port);
         server_data.handler_factory = new HTTPRequestHandlerFactory(slowdown_receive);
-        server_data.server.reset(
-            new Poco::Net::HTTPServer(server_data.handler_factory, *server_data.socket, server_data.params));
+        server_data.server =  std::make_unique<Poco::Net::HTTPServer>(
+            server_data.handler_factory, *server_data.socket, server_data.params);
 
         server_data.server->start();
     }
 
-    Poco::Net::HTTPServer & getServer()
+    Poco::Net::HTTPServer & getServer() const
     {
         return *server_data.server;
     }
@@ -151,7 +151,6 @@ protected:
         *slowdown_receive = seconds;
     }
 
-    DB::ConnectionPoolMetrics metrics = DB::IEndpointConnectionPool::getMetrics(DB::MetricsType::METRICS_FOR_HTTP);
     DB::ConnectionTimeouts timeouts;
     std::shared_ptr<std::atomic<size_t>> slowdown_receive = std::make_shared<std::atomic<size_t>>(0);
 
@@ -199,20 +198,16 @@ void echoRequest(String data, HTTPSession & session)
     {
         Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_PUT, "/", "HTTP/1.1"); // HTTP/1.1 is required for keep alive
         request.setContentLength(data.size());
-        std::cerr << "send\n";
         std::ostream & ostream = session.sendRequest(request);
-        std::cerr << "write\n";
         ostream << data;
     }
 
     {
         std::stringstream result;
         Poco::Net::HTTPResponse response;
-        std::cerr << "receive\n";
         std::istream & istream = session.receiveResponse(response);
         ASSERT_EQ(response.getStatus(), Poco::Net::HTTPResponse::HTTP_OK);
 
-        std::cerr << "read\n";
         stream_copy_n(istream, result);
         ASSERT_EQ(data, result.str());
     }
@@ -224,10 +219,10 @@ TEST_F(ConnectionPoolTest, CanConnect)
     auto connection = pool->getConnection(timeouts);
 
     ASSERT_TRUE(connection->connected());
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
 
-    ASSERT_EQ(1, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(0, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     wait_until([&] () { return getServer().currentConnections() == 1; });
     ASSERT_EQ(1, getServer().currentConnections());
@@ -239,7 +234,7 @@ TEST_F(ConnectionPoolTest, CanConnect)
     ASSERT_EQ(0, getServer().currentConnections());
     ASSERT_EQ(1, getServer().totalConnections());
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
 }
 
 TEST_F(ConnectionPoolTest, CanRequest)
@@ -247,21 +242,18 @@ TEST_F(ConnectionPoolTest, CanRequest)
     auto pool = getPool();
     auto connection = pool->getConnection(timeouts);
 
-    std::cerr << "request\n";
     echoRequest("Hello", *connection);
 
     ASSERT_EQ(1, getServer().totalConnections());
     ASSERT_EQ(1, getServer().currentConnections());
 
-    std::cerr << "reset\n";
     connection->reset();
 
-    std::cerr << "wait\n";
     wait_until([&] () { return getServer().currentConnections() == 0; });
     ASSERT_EQ(0, getServer().currentConnections());
     ASSERT_EQ(1, getServer().totalConnections());
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
 }
 
 TEST_F(ConnectionPoolTest, CanPreserve)
@@ -270,18 +262,17 @@ TEST_F(ConnectionPoolTest, CanPreserve)
 
     {
         auto connection = pool->getConnection(timeouts);
-        std::cerr << "implicit save connection with reuse tag" << std::endl;
     }
 
-    ASSERT_EQ(1, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(1, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     wait_until([&] () { return getServer().currentConnections() == 1; });
     ASSERT_EQ(1, getServer().currentConnections());
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 }
 
 TEST_F(ConnectionPoolTest, CanReuse)
@@ -293,14 +284,14 @@ TEST_F(ConnectionPoolTest, CanReuse)
         // DB::setReuseTag(*connection);
     }
 
-    ASSERT_EQ(1, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(1, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     {
         auto connection = pool->getConnection(timeouts);
 
-        ASSERT_EQ(1, CurrentMetrics::get(metrics.active_count));
-        ASSERT_EQ(0, CurrentMetrics::get(metrics.stored_count));
+        ASSERT_EQ(1, CurrentMetrics::get(pool->getMetrics().active_count));
+        ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().stored_count));
 
         wait_until([&] () { return getServer().currentConnections() == 1; });
         ASSERT_EQ(1, getServer().currentConnections());
@@ -310,20 +301,19 @@ TEST_F(ConnectionPoolTest, CanReuse)
         ASSERT_EQ(1, getServer().totalConnections());
         ASSERT_EQ(1, getServer().currentConnections());
 
-        std::cerr << "explicit reset connection" << std::endl;
         connection->reset();
     }
 
-    ASSERT_EQ(0, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(0, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     wait_until([&] () { return getServer().currentConnections() == 0; });
     ASSERT_EQ(0, getServer().currentConnections());
     ASSERT_EQ(1, getServer().totalConnections());
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 }
 
 TEST_F(ConnectionPoolTest, CanReuse10)
@@ -346,9 +336,9 @@ TEST_F(ConnectionPoolTest, CanReuse10)
     ASSERT_EQ(0, getServer().currentConnections());
     ASSERT_EQ(1, getServer().totalConnections());
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 }
 
 TEST_F(ConnectionPoolTest, CanReuse5)
@@ -358,17 +348,18 @@ TEST_F(ConnectionPoolTest, CanReuse5)
     auto pool = getPool();
 
     std::vector<DB::HTTPSessionPtr> connections;
+    connections.reserve(5);
     for (int i = 0; i < 5; ++i)
     {
         connections.push_back(pool->getConnection(timeouts));
     }
     connections.clear();
 
-    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
-    ASSERT_EQ(5, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(5, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
+    ASSERT_EQ(5, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(5, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     wait_until([&] () { return getServer().currentConnections() == 5; });
     ASSERT_EQ(5, getServer().currentConnections());
@@ -382,11 +373,11 @@ TEST_F(ConnectionPoolTest, CanReuse5)
 
     ASSERT_EQ(5, getServer().totalConnections());
 
-    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[metrics.reused]);
-    ASSERT_EQ(5, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(5, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(10, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(5, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
+    ASSERT_EQ(5, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(5, CurrentMetrics::get(pool->getMetrics().stored_count));
 }
 
 TEST_F(ConnectionPoolTest, CanReconnectAndCreate)
@@ -403,12 +394,12 @@ TEST_F(ConnectionPoolTest, CanReconnectAndCreate)
         in_use.push_back(connection);
     }
 
-    ASSERT_EQ(count, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(count, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 
-    ASSERT_EQ(count, CurrentMetrics::get(metrics.active_count));
-    ASSERT_EQ(0, CurrentMetrics::get(metrics.stored_count));
+    ASSERT_EQ(count, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().stored_count));
 
     auto connection = std::move(in_use.back());
     in_use.pop_back();
@@ -425,9 +416,9 @@ TEST_F(ConnectionPoolTest, CanReconnectAndCreate)
     ASSERT_EQ(1, getServer().currentConnections());
     ASSERT_EQ(count+1, getServer().totalConnections());
 
-    ASSERT_EQ(count+1, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(count+1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 }
 
 TEST_F(ConnectionPoolTest, CanReconnectAndReuse)
@@ -460,9 +451,9 @@ TEST_F(ConnectionPoolTest, CanReconnectAndReuse)
     ASSERT_EQ(0, getServer().currentConnections());
     ASSERT_EQ(2, getServer().totalConnections());
 
-    ASSERT_EQ(count, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.reused]);
+    ASSERT_EQ(count, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
 }
 
 TEST_F(ConnectionPoolTest, ReceiveTimeout)
@@ -479,10 +470,10 @@ TEST_F(ConnectionPoolTest, ReceiveTimeout)
         );
     }
 
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.reset]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reset]);
 
     {
         timeouts.withReceiveTimeout(3);
@@ -492,10 +483,10 @@ TEST_F(ConnectionPoolTest, ReceiveTimeout)
         );
     }
 
-    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[metrics.reused]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.reset]);
+    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reset]);
 
     {
         /// timeouts have effect for reused session
@@ -506,17 +497,20 @@ TEST_F(ConnectionPoolTest, ReceiveTimeout)
         );
     }
 
-    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[metrics.created]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.preserved]);
-    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[metrics.reused]);
-    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[metrics.reset]);
+    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reused]);
+    ASSERT_EQ(2, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reset]);
 }
 
 TEST_F(ConnectionPoolTest, ReadWriteBufferFromHTTP)
 {
-    Poco::Net::HTTPBasicCredentials empty_creds;
     std::string_view message = "Hello ReadWriteBufferFromHTTP";
-    auto buf_from_http = DB::BuilderRWBufferFromHttp(Poco::URI(getServerUrl()))
+    auto uri = Poco::URI(getServerUrl());
+    auto metrics = DB::ConnectionPools::instance().getPool(DB::ConnectionGroupType::HTTP, uri, DB::ProxyConfiguration{})->getMetrics();
+    Poco::Net::HTTPBasicCredentials empty_creds;
+    auto buf_from_http = DB::BuilderRWBufferFromHttp(uri)
+                             .withConnectionGroup(DB::ConnectionGroupType::HTTP)
                              .withOutCallback(
                                  [&] (std::ostream & in)
                                  {
@@ -544,4 +538,24 @@ TEST_F(ConnectionPoolTest, ReadWriteBufferFromHTTP)
 
     ASSERT_EQ(1, CurrentMetrics::get(metrics.active_count));
     ASSERT_EQ(1, CurrentMetrics::get(metrics.stored_count));
+}
+
+TEST_F(ConnectionPoolTest, HardLimit)
+{
+    DB::ConnectionPoolLimits zero_limits {0, 0, 0};
+    DB::ConnectionPools::instance().setLimits(zero_limits, zero_limits, zero_limits);
+
+    auto pool = getPool();
+
+    {
+        auto connection = pool->getConnection(timeouts);
+    }
+
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().active_count));
+    ASSERT_EQ(0, CurrentMetrics::get(pool->getMetrics().stored_count));
+
+
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().created]);
+    ASSERT_EQ(0, DB::CurrentThread::getProfileEvents()[pool->getMetrics().preserved]);
+    ASSERT_EQ(1, DB::CurrentThread::getProfileEvents()[pool->getMetrics().reset]);
 }

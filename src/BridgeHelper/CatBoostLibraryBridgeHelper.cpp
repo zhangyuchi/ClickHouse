@@ -59,8 +59,9 @@ bool CatBoostLibraryBridgeHelper::bridgeHandShake()
     try
     {
         auto buf = BuilderRWBufferFromHttp(getPingURI())
-            .withTimeouts(http_timeouts)
-            .create(credentials);
+                       .withConnectionGroup(ConnectionGroupType::STORAGE)
+                       .withTimeouts(http_timeouts)
+                       .create(credentials);
 
         readString(result, *buf);
     }
@@ -83,9 +84,10 @@ ExternalModelInfos CatBoostLibraryBridgeHelper::listModels()
     startBridgeSync();
 
     auto buf = BuilderRWBufferFromHttp(createRequestURI(CATBOOST_LIST_METHOD))
-                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
-                    .withTimeouts(http_timeouts)
-                    .create(credentials);
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
+                   .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
+                   .withTimeouts(http_timeouts)
+                   .create(credentials);
 
     ExternalModelInfos result;
 
@@ -119,6 +121,7 @@ void CatBoostLibraryBridgeHelper::removeModel()
     assert(model_path);
 
     auto buf = BuilderRWBufferFromHttp(createRequestURI(CATBOOST_REMOVEMODEL_METHOD))
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(http_timeouts)
                    .withOutCallback(
@@ -138,6 +141,7 @@ void CatBoostLibraryBridgeHelper::removeAllModels()
     startBridgeSync();
 
     auto buf = BuilderRWBufferFromHttp(createRequestURI(CATBOOST_REMOVEALLMODELS_METHOD))
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(http_timeouts)
                    .create(credentials);
@@ -154,6 +158,7 @@ size_t CatBoostLibraryBridgeHelper::getTreeCount()
     assert(model_path && library_path);
 
     auto buf = BuilderRWBufferFromHttp(createRequestURI(CATBOOST_GETTREECOUNT_METHOD))
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(http_timeouts)
                    .withOutCallback(
@@ -181,6 +186,7 @@ ColumnPtr CatBoostLibraryBridgeHelper::evaluate(const ColumnsWithTypeAndName & c
     assert(model_path);
 
     auto buf = BuilderRWBufferFromHttp(createRequestURI(CATBOOST_LIB_EVALUATE_METHOD))
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(http_timeouts)
                    .withOutCallback(

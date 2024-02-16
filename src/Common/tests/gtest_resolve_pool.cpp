@@ -1,5 +1,6 @@
 #include <IO/WriteBufferFromFile.h>
 #include <Common/HostResolvePool.h>
+#include <base/sleep.h>
 
 #include <thread>
 #include <gtest/gtest.h>
@@ -10,7 +11,7 @@ public:
     using ResolveFunction = DB::HostResolvePool::ResolveFunction;
 
     ResolvePoolMock(String host_, Poco::Timespan history_, ResolveFunction && func)
-    : DB::HostResolvePool(std::move(func), DB::MetricsType::METRICS_FOR_S3_DISK, std::move(host_), history_)
+    : DB::HostResolvePool(std::move(func), DB::ConnectionGroupType::DISK, std::move(host_), history_)
     {
     }
 };
@@ -43,6 +44,7 @@ protected:
         auto resolve_func = [&] (const String &)
         {
             std::vector<Poco::Net::IPAddress> result;
+            result.reserve(addresses.size());
             for (const auto & item : addresses)
             {
                 result.push_back(Poco::Net::IPAddress(item));
@@ -54,7 +56,7 @@ protected:
         return std::make_shared<ResolvePoolMock>("some_host", Poco::Timespan(history_ms * 1000), std::move(resolve_func));
     }
 
-    DB::HostResolvePoolMetrics metrics = DB::HostResolvePool::getMetrics(DB::MetricsType::METRICS_FOR_S3_DISK);
+    DB::HostResolvePoolMetrics metrics = DB::HostResolvePool::getMetrics(DB::ConnectionGroupType::DISK);
     std::set<String> addresses;
 };
 
@@ -261,7 +263,7 @@ TEST_F(ResolvePoolTest, CanExpire)
     ASSERT_TRUE(addresses.contains(*expired_addr));
 
     addresses.erase(*expired_addr);
-    sleep(1);
+    sleepForSeconds(1);
 
     for (size_t i = 0; i < 1000; ++i)
     {

@@ -10,13 +10,13 @@
 
 namespace ProfileEvents
 {
-    extern const Event S3StorageAddressesDiscovered;
-    extern const Event S3StorageAddressesExpired;
-    extern const Event S3StorageAddressesFailScored;
+    extern const Event StorageAddressesDiscovered;
+    extern const Event StorageAddressesExpired;
+    extern const Event StorageAddressesFailScored;
 
-    extern const Event S3DiskAddressesDiscovered;
-    extern const Event S3DiskAddressesExpired;
-    extern const Event S3DiskAddressesFailScored;
+    extern const Event DiskAddressesDiscovered;
+    extern const Event DiskAddressesExpired;
+    extern const Event DiskAddressesFailScored;
 
     extern const Event HttpAddressesDiscovered;
     extern const Event HttpAddressesExpired;
@@ -25,8 +25,8 @@ namespace ProfileEvents
 
 namespace CurrentMetrics
 {
-    extern const Metric S3StorageAddressesActive;
-    extern const Metric S3DiskAddressesActive;
+    extern const Metric StorageAddressesActive;
+    extern const Metric DiskAddressesActive;
     extern const Metric HttpAddressesActive;
 }
 
@@ -38,20 +38,20 @@ namespace DB::ErrorCodes
 DB::HostResolvePoolMetrics getMetricsForS3StorageHostResolve()
 {
     return DB::HostResolvePoolMetrics {
-        .discovered = ProfileEvents::S3StorageAddressesDiscovered,
-        .expired = ProfileEvents::S3StorageAddressesExpired,
-        .failed = ProfileEvents::S3StorageAddressesFailScored,
-        .active_count = CurrentMetrics::S3StorageAddressesActive,
+        .discovered = ProfileEvents::StorageAddressesDiscovered,
+        .expired = ProfileEvents::StorageAddressesExpired,
+        .failed = ProfileEvents::StorageAddressesFailScored,
+        .active_count = CurrentMetrics::StorageAddressesActive,
     };
 }
 
 DB::HostResolvePoolMetrics getMetricsForS3DiskHostResolve()
 {
     return DB::HostResolvePoolMetrics {
-        .discovered = ProfileEvents::S3DiskAddressesDiscovered,
-        .expired = ProfileEvents::S3DiskAddressesExpired,
-        .failed = ProfileEvents::S3DiskAddressesFailScored,
-        .active_count = CurrentMetrics::S3DiskAddressesActive,
+        .discovered = ProfileEvents::DiskAddressesDiscovered,
+        .expired = ProfileEvents::DiskAddressesExpired,
+        .failed = ProfileEvents::DiskAddressesFailScored,
+        .active_count = CurrentMetrics::DiskAddressesActive,
     };
 }
 
@@ -65,15 +65,15 @@ DB::HostResolvePoolMetrics getMetricsForHttpHostResolve()
     };
 }
 
-DB::HostResolvePoolMetrics DB::HostResolvePool::getMetrics(MetricsType type)
+DB::HostResolvePoolMetrics DB::HostResolvePool::getMetrics(DB::ConnectionGroupType group_type)
 {
-    switch (type)
+    switch (group_type)
     {
-        case MetricsType::METRICS_FOR_S3_STORAGE:
+        case DB::ConnectionGroupType::STORAGE:
             return getMetricsForS3StorageHostResolve();
-        case MetricsType::METRICS_FOR_S3_DISK:
+        case DB::ConnectionGroupType::DISK:
             return getMetricsForS3DiskHostResolve();
-        case MetricsType::METRICS_FOR_HTTP:
+        case DB::ConnectionGroupType::HTTP:
             return getMetricsForHttpHostResolve();
     }
 }
@@ -85,11 +85,11 @@ DB::HostResolvePool::WeakPtr DB::HostResolvePool::getWeakFromThis()
 
 DB::HostResolvePool::HostResolvePool(
     String host_,
-    MetricsType metrics_type,
+    DB::ConnectionGroupType group_type,
     Poco::Timespan history_)
     : host(std::move(host_))
     , history(history_)
-    , metrics(getMetrics(metrics_type))
+    , metrics(getMetrics(group_type))
     , resolve_function([] (const String & host_to_resolve)
     {
       return DB::DNSResolver::instance().resolveHostAll(host_to_resolve);
@@ -100,12 +100,12 @@ DB::HostResolvePool::HostResolvePool(
 
 DB::HostResolvePool::HostResolvePool(
     ResolveFunction && resolve_function_,
-    MetricsType metrics_type,
+    DB::ConnectionGroupType group_type,
     String host_,
     Poco::Timespan history_)
     : host(std::move(host_))
     , history(history_)
-    , metrics(getMetrics(metrics_type))
+    , metrics(getMetrics(group_type))
     , resolve_function(std::move(resolve_function_))
 {
     update();

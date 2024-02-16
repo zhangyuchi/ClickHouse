@@ -49,10 +49,11 @@ WebObjectStorage::loadFiles(const String & path, const std::unique_lock<std::sha
             getContext()->getServerSettings().keep_alive_timeout);
 
         auto metadata_buf = BuilderRWBufferFromHttp(Poco::URI(fs::path(full_url) / ".index"))
-                       .withSetting(getContext()->getReadSettings())
-                       .withTimeouts(timeouts)
-                       .withHostFilter(&getContext()->getRemoteHostFilter())
-                       .create(credentials);
+                                .withConnectionGroup(ConnectionGroupType::DISK)
+                                .withSetting(getContext()->getReadSettings())
+                                .withTimeouts(timeouts)
+                                .withHostFilter(&getContext()->getRemoteHostFilter())
+                                .create(credentials);
 
         String file_name;
 

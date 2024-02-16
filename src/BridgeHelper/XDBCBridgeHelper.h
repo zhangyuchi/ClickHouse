@@ -98,8 +98,9 @@ protected:
         try
         {
             auto buf = BuilderRWBufferFromHttp(getPingURI())
-                                    .withTimeouts(getHTTPTimeouts())
-                                    .create(credentials);
+                           .withConnectionGroup(ConnectionGroupType::STORAGE)
+                           .withTimeouts(getHTTPTimeouts())
+                           .create(credentials);
 
             return checkString(PING_OK_ANSWER, *buf);
         }
@@ -202,6 +203,7 @@ protected:
             uri.addQueryParameter("use_connection_pooling", toString(use_connection_pooling));
 
             auto buf = BuilderRWBufferFromHttp(uri)
+                           .withConnectionGroup(ConnectionGroupType::STORAGE)
                            .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                            .withTimeouts(getHTTPTimeouts())
                            .create(credentials);
@@ -227,6 +229,7 @@ protected:
             uri.addQueryParameter("use_connection_pooling", toString(use_connection_pooling));
 
             auto buf = BuilderRWBufferFromHttp(uri)
+                           .withConnectionGroup(ConnectionGroupType::STORAGE)
                            .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                            .withTimeouts(getHTTPTimeouts())
                            .create(credentials);

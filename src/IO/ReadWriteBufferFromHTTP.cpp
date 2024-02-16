@@ -164,6 +164,7 @@ void ReadWriteBufferFromHTTP::getHeadResponse(Poco::Net::HTTPResponse & response
 }
 
 ReadWriteBufferFromHTTP::ReadWriteBufferFromHTTP(
+    const ConnectionGroupType & connection_group_,
     const Poco::URI & uri_,
     const std::string & method_,
     ProxyConfiguration proxy_config_,
@@ -180,6 +181,7 @@ ReadWriteBufferFromHTTP::ReadWriteBufferFromHTTP(
     bool delay_initialization,
     std::optional<HTTPFileInfo> file_info_)
     : SeekableReadBuffer(nullptr, 0)
+    , connection_group(connection_group_)
     , initial_uri(uri_)
     , method(!method_.empty() ? method_ : out_stream_callback_ ? Poco::Net::HTTPRequest::HTTP_POST : Poco::Net::HTTPRequest::HTTP_GET)
     , proxy_config(std::move(proxy_config_))
@@ -248,7 +250,7 @@ ReadWriteBufferFromHTTP::CallResult ReadWriteBufferFromHTTP::callImpl(
 
     LOG_TEST(log, "Sending request {} to {}", method_, uri_.toString());
 
-    auto session = makeHTTPSession(uri_, timeouts, proxy_config);
+    auto session = makeHTTPSession(connection_group, uri_, timeouts, proxy_config);
 
     auto & stream_out = session->sendRequest(request);
     if (out_stream_callback)

@@ -215,6 +215,7 @@ QueryPipeline XDBCDictionarySource::loadFromQuery(const Poco::URI & uri, const B
     };
 
     auto buf = BuilderRWBufferFromHttp(uri)
+                   .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(timeouts)
                    .withOutCallback(std::move(write_body_callback))
