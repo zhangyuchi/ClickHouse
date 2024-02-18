@@ -60,7 +60,7 @@ std::unique_ptr<ReadBuffer> ReadBufferFromWebServer::initialize()
     connection_timeouts.withConnectionTimeout(std::max<Poco::Timespan>(settings.http_connection_timeout, Poco::Timespan(20, 0)));
     connection_timeouts.withReceiveTimeout(std::max<Poco::Timespan>(settings.http_receive_timeout, Poco::Timespan(20, 0)));
 
-    auto res = BuilderRWBufferFromHttp(uri)
+    auto res = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::DISK)
                    .withSetting(read_settings)
                    .withTimeouts(connection_timeouts)

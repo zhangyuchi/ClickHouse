@@ -651,13 +651,13 @@ The server successfully detected this situation and will download merged part fr
     M(DiskConnectionsErrors, "Number of cases when creation of a connection for disk is failed") \
     M(DiskConnectionsElapsedMicroseconds, "Total time spend on creating connections for disk") \
     \
-    M(HttpConnectionsCreated, "Number of created http connections") \
-    M(HttpConnectionsReused, "Number of reused http connections") \
-    M(HttpConnectionsReset, "Number of reset http connections") \
-    M(HttpConnectionsPreserved, "Number of preserved http connections") \
-    M(HttpConnectionsExpired, "Number of expired http connections") \
-    M(HttpConnectionsErrors, "Number of cases when creation of a http connection failed") \
-    M(HttpConnectionsElapsedMicroseconds, "Total time spend on creating http connections") \
+    M(HTTPConnectionsCreated, "Number of created http connections") \
+    M(HTTPConnectionsReused, "Number of reused http connections") \
+    M(HTTPConnectionsReset, "Number of reset http connections") \
+    M(HTTPConnectionsPreserved, "Number of preserved http connections") \
+    M(HTTPConnectionsExpired, "Number of expired http connections") \
+    M(HTTPConnectionsErrors, "Number of cases when creation of a http connection failed") \
+    M(HTTPConnectionsElapsedMicroseconds, "Total time spend on creating http connections") \
     \
     M(StorageAddressesDiscovered, "Total count of new addresses in dns resolve results for storage hosts") \
     M(StorageAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for storage hosts") \
@@ -667,9 +667,9 @@ The server successfully detected this situation and will download merged part fr
     M(DiskAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for disk hosts") \
     M(DiskAddressesFailScored, "Total count of new addresses in dns resolve results for disk hosts") \
     \
-    M(HttpAddressesDiscovered, "Total count of new addresses in dns resolve results for http hosts") \
-    M(HttpAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for http hosts") \
-    M(HttpAddressesFailScored, "Total count of new addresses in dns resolve results for http hosts") \
+    M(HTTPAddressesDiscovered, "Total count of new addresses in dns resolve results for http hosts") \
+    M(HTTPAddressesExpired, "Total count of expired addresses which is no longer presented in dns resolve results for http hosts") \
+    M(HTTPAddressesFailScored, "Total count of new addresses in dns resolve results for http hosts") \
 
 
 #ifdef APPLY_FOR_EXTERNAL_EVENTS

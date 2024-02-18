@@ -48,7 +48,7 @@ WebObjectStorage::loadFiles(const String & path, const std::unique_lock<std::sha
             getContext()->getSettingsRef(),
             getContext()->getServerSettings().keep_alive_timeout);
 
-        auto metadata_buf = BuilderRWBufferFromHttp(Poco::URI(fs::path(full_url) / ".index"))
+        auto metadata_buf = BuilderRWBufferFromHTTP(Poco::URI(fs::path(full_url) / ".index"))
                                 .withConnectionGroup(ConnectionGroupType::DISK)
                                 .withSetting(getContext()->getReadSettings())
                                 .withTimeouts(timeouts)

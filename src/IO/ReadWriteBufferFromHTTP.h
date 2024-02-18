@@ -189,7 +189,7 @@ public:
 
 using ReadWriteBufferFromHTTPPtr = std::unique_ptr<ReadWriteBufferFromHTTP>;
 
-class BuilderRWBufferFromHttp
+class BuilderRWBufferFromHTTP
 {
     Poco::URI uri;
     std::string method = Poco::Net::HTTPRequest::HTTP_GET;
@@ -206,12 +206,12 @@ class BuilderRWBufferFromHttp
     bool delay_initialization = true;
 
 public:
-    BuilderRWBufferFromHttp(Poco::URI uri_)
+    BuilderRWBufferFromHTTP(Poco::URI uri_)
         : uri(uri_)
     {}
 
 #define setterMember(name, member) \
-    BuilderRWBufferFromHttp & name(decltype(BuilderRWBufferFromHttp::member) arg_##member) \
+    BuilderRWBufferFromHTTP & name(decltype(BuilderRWBufferFromHTTP::member) arg_##member) \
     { \
         member = std::move(arg_##member); \
         return *this; \

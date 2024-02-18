@@ -214,7 +214,7 @@ QueryPipeline XDBCDictionarySource::loadFromQuery(const Poco::URI & uri, const B
         os << "query=" << escapeForFileName(query);
     };
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(timeouts)

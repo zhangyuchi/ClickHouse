@@ -526,7 +526,7 @@ std::pair<MergeTreeData::MutableDataPartPtr, scope_guard> Fetcher::fetchSelected
         creds.setPassword(password);
     }
 
-    auto in = BuilderRWBufferFromHttp(uri)
+    auto in = BuilderRWBufferFromHTTP(uri)
                   .withConnectionGroup(ConnectionGroupType::HTTP)
                   .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                   .withTimeouts(timeouts)

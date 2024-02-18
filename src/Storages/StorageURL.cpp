@@ -1329,7 +1329,7 @@ std::optional<time_t> IStorageURLBase::tryGetLastModificationTime(
 
     auto proxy_config = getProxyConfiguration(uri.getScheme());
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withSetting(context->getReadSettings())
                    .withTimeouts(getHTTPTimeouts(context))

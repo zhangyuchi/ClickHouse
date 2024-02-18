@@ -343,7 +343,7 @@ TEST_F(ConnectionPoolTest, CanReuse10)
 
 TEST_F(ConnectionPoolTest, CanReuse5)
 {
-    timeouts.withHttpKeepAliveTimeout(1);
+    timeouts.withHTTPKeepAliveTimeout(1);
 
     auto pool = getPool();
 
@@ -509,7 +509,7 @@ TEST_F(ConnectionPoolTest, ReadWriteBufferFromHTTP)
     auto uri = Poco::URI(getServerUrl());
     auto metrics = DB::ConnectionPools::instance().getPool(DB::ConnectionGroupType::HTTP, uri, DB::ProxyConfiguration{})->getMetrics();
     Poco::Net::HTTPBasicCredentials empty_creds;
-    auto buf_from_http = DB::BuilderRWBufferFromHttp(uri)
+    auto buf_from_http = DB::BuilderRWBufferFromHTTP(uri)
                              .withConnectionGroup(DB::ConnectionGroupType::HTTP)
                              .withOutCallback(
                                  [&] (std::ostream & in)

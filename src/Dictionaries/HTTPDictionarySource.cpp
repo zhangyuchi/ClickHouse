@@ -91,7 +91,7 @@ QueryPipeline HTTPDictionarySource::loadAll()
 
     Poco::URI uri(configuration.url);
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withSetting(context->getReadSettings())
                    .withTimeouts(timeouts)
@@ -108,7 +108,7 @@ QueryPipeline HTTPDictionarySource::loadUpdatedAll()
     getUpdateFieldAndDate(uri);
     LOG_TRACE(log, "loadUpdatedAll {}", uri.toString());
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withSetting(context->getReadSettings())
                    .withTimeouts(timeouts)
@@ -135,7 +135,7 @@ QueryPipeline HTTPDictionarySource::loadIds(const std::vector<UInt64> & ids)
 
     Poco::URI uri(configuration.url);
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withSetting(context->getReadSettings())
@@ -164,7 +164,7 @@ QueryPipeline HTTPDictionarySource::loadKeys(const Columns & key_columns, const 
 
     Poco::URI uri(configuration.url);
 
-    auto buf = BuilderRWBufferFromHttp(uri)
+    auto buf = BuilderRWBufferFromHTTP(uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withSetting(context->getReadSettings())

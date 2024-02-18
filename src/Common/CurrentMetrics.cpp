@@ -269,12 +269,12 @@
     M(DiskConnectionsStored, "Total count of sessions stored in the session pool for disks") \
     M(DiskConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for disks") \
     \
-    M(HttpConnectionsStored, "Total count of sessions stored in the session pool for http hosts") \
-    M(HttpConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for http hosts") \
+    M(HTTPConnectionsStored, "Total count of sessions stored in the session pool for http hosts") \
+    M(HTTPConnectionsActive, "Total count of all sessions: stored in the pool and actively used right now for http hosts") \
     \
     M(StorageAddressesActive, "Total count of addresses which are used for creation connections for storages") \
     M(DiskAddressesActive, "Total count of addresses which are used for creation connections for disks") \
-    M(HttpAddressesActive, "Total count of addresses which are used for creation connections") \
+    M(HTTPAddressesActive, "Total count of addresses which are used for creation connections") \
 
 #ifdef APPLY_FOR_EXTERNAL_METRICS
     #define APPLY_FOR_METRICS(M) APPLY_FOR_BUILTIN_METRICS(M) APPLY_FOR_EXTERNAL_METRICS(M)

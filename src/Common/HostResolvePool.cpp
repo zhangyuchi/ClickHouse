@@ -18,16 +18,16 @@ namespace ProfileEvents
     extern const Event DiskAddressesExpired;
     extern const Event DiskAddressesFailScored;
 
-    extern const Event HttpAddressesDiscovered;
-    extern const Event HttpAddressesExpired;
-    extern const Event HttpAddressesFailScored;
+    extern const Event HTTPAddressesDiscovered;
+    extern const Event HTTPAddressesExpired;
+    extern const Event HTTPAddressesFailScored;
 }
 
 namespace CurrentMetrics
 {
     extern const Metric StorageAddressesActive;
     extern const Metric DiskAddressesActive;
-    extern const Metric HttpAddressesActive;
+    extern const Metric HTTPAddressesActive;
 }
 
 namespace DB::ErrorCodes
@@ -55,13 +55,13 @@ DB::HostResolvePoolMetrics getMetricsForS3DiskHostResolve()
     };
 }
 
-DB::HostResolvePoolMetrics getMetricsForHttpHostResolve()
+DB::HostResolvePoolMetrics getMetricsForHTTPHostResolve()
 {
     return DB::HostResolvePoolMetrics {
-        .discovered = ProfileEvents::HttpAddressesDiscovered,
-        .expired = ProfileEvents::HttpAddressesExpired,
-        .failed = ProfileEvents::HttpAddressesFailScored,
-        .active_count = CurrentMetrics::HttpAddressesActive,
+        .discovered = ProfileEvents::HTTPAddressesDiscovered,
+        .expired = ProfileEvents::HTTPAddressesExpired,
+        .failed = ProfileEvents::HTTPAddressesFailScored,
+        .active_count = CurrentMetrics::HTTPAddressesActive,
     };
 }
 
@@ -74,7 +74,7 @@ DB::HostResolvePoolMetrics DB::HostResolvePool::getMetrics(DB::ConnectionGroupTy
         case DB::ConnectionGroupType::DISK:
             return getMetricsForS3DiskHostResolve();
         case DB::ConnectionGroupType::HTTP:
-            return getMetricsForHttpHostResolve();
+            return getMetricsForHTTPHostResolve();
     }
 }
 

@@ -52,13 +52,13 @@ namespace ProfileEvents
     extern const Event DiskConnectionsErrors;
     extern const Event DiskConnectionsElapsedMicroseconds;
 
-    extern const Event HttpConnectionsCreated;
-    extern const Event HttpConnectionsReused;
-    extern const Event HttpConnectionsReset;
-    extern const Event HttpConnectionsPreserved;
-    extern const Event HttpConnectionsExpired;
-    extern const Event HttpConnectionsErrors;
-    extern const Event HttpConnectionsElapsedMicroseconds;
+    extern const Event HTTPConnectionsCreated;
+    extern const Event HTTPConnectionsReused;
+    extern const Event HTTPConnectionsReset;
+    extern const Event HTTPConnectionsPreserved;
+    extern const Event HTTPConnectionsExpired;
+    extern const Event HTTPConnectionsErrors;
+    extern const Event HTTPConnectionsElapsedMicroseconds;
 }
 
 
@@ -70,8 +70,8 @@ namespace CurrentMetrics
     extern const Metric DiskConnectionsStored;
     extern const Metric DiskConnectionsActive;
 
-    extern const Metric HttpConnectionsStored;
-    extern const Metric HttpConnectionsActive;
+    extern const Metric HTTPConnectionsStored;
+    extern const Metric HTTPConnectionsActive;
 }
 
 
@@ -139,15 +139,15 @@ namespace
     DB::ConnectionPoolMetrics getMetricsForHTTPConnectionPool()
     {
         return DB::ConnectionPoolMetrics{
-            .created = ProfileEvents::HttpConnectionsCreated,
-            .reused = ProfileEvents::HttpConnectionsReused,
-            .reset = ProfileEvents::HttpConnectionsReset,
-            .preserved = ProfileEvents::HttpConnectionsPreserved,
-            .expired = ProfileEvents::HttpConnectionsExpired,
-            .errors = ProfileEvents::HttpConnectionsErrors,
-            .elapsed_microseconds = ProfileEvents::HttpConnectionsElapsedMicroseconds,
-            .stored_count = CurrentMetrics::HttpConnectionsStored,
-            .active_count = CurrentMetrics::HttpConnectionsActive,
+            .created = ProfileEvents::HTTPConnectionsCreated,
+            .reused = ProfileEvents::HTTPConnectionsReused,
+            .reset = ProfileEvents::HTTPConnectionsReset,
+            .preserved = ProfileEvents::HTTPConnectionsPreserved,
+            .expired = ProfileEvents::HTTPConnectionsExpired,
+            .errors = ProfileEvents::HTTPConnectionsErrors,
+            .elapsed_microseconds = ProfileEvents::HTTPConnectionsElapsedMicroseconds,
+            .stored_count = CurrentMetrics::HTTPConnectionsStored,
+            .active_count = CurrentMetrics::HTTPConnectionsActive,
         };
     }
 

@@ -153,7 +153,7 @@ ColumnsDescription ITableFunctionXDBC::getActualTableStructure(ContextPtr contex
     columns_info_uri.addQueryParameter("external_table_functions_use_nulls", toString(use_nulls));
 
     Poco::Net::HTTPBasicCredentials credentials{};
-    auto buf = BuilderRWBufferFromHttp(columns_info_uri)
+    auto buf = BuilderRWBufferFromHTTP(columns_info_uri)
                    .withConnectionGroup(ConnectionGroupType::STORAGE)
                    .withMethod(Poco::Net::HTTPRequest::HTTP_POST)
                    .withTimeouts(ConnectionTimeouts::getHTTPTimeouts(
