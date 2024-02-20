@@ -631,12 +631,13 @@ public:
 
     void visitImpl(QueryTreeNodePtr & node)
     {
-        if (auto * column = node->as<ColumnNode>(); column != nullptr)
+        if (auto * column = node->as<ColumnNode>())
         {
             if (column->hasExpression())
             {
-                node = column->getExpressionOrThrow();
-                node->setAlias(column->getColumnName());
+                QueryTreeNodePtr column_expression = column->getExpressionOrThrow();
+                column_expression->setAlias(column->getColumnName());
+                node = std::move(column_expression);
             }
             else
                 column->setColumnSource(replacement_table_expression);
