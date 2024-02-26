@@ -341,8 +341,8 @@ def main():
     args.release_type = auto_release_type(args.version, args.release_type)
     tags = gen_tags(args.version, args.release_type)
     pr_info = None
-    repo_urls = dict()
-    direct_urls: Dict[str, List[str]] = dict()
+    repo_urls = {}
+    direct_urls: Dict[str, List[str]] = {}
     pr_info = PRInfo()
     release_or_pr, _ = get_release_or_pr(pr_info, args.version)
 
