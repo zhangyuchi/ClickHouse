@@ -1,0 +1,176 @@
+name: StageWF
+'on':
+  workflow_call:
+    inputs:
+      stage:
+        description: stage name S0..SN
+        type: string
+        required: true
+      data:
+        description: ci data
+        type: string
+        required: true
+
+jobs:
+
+  s1:
+    if: ${{ !failure() && !cancelled() }}
+    name: ${{ matrix.job_name_and_runner_type.job_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job_name_and_runner_type: ${{ fromJson(inputs.data).stages_data[inputs.stage] }}
+    uses: ./.github/workflows/reusable_test.yml
+    with:
+      test_name: ${{ matrix.job_name_and_runner_type.job_name }}
+      runner_type: ${{ matrix.job_name_and_runner_type.runner_type }}
+      data: ${{ inputs.data }}
+
+
+  # J0:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J0') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J0']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J0']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J1:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J1') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J1']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J1']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J2:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J2') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J2']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J2']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J3:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J3') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J3']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J3']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J4:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J4') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J4']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J4']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J5:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J5') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J5']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J5']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J6:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J6') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J6']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J6']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J7:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J7') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J7']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J7']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J8:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J8') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J8']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J8']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J9:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J9') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J9']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J9']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J10:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J10') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J10']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J10']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J11:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J11') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J11']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J11']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J12:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J12') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J12']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J12']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J13:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J13') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J13']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J13']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J14:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J14') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J14']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J14']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J15:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J15') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J15']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J15']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J16:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J166') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J16']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J16']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J17:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J176') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J17']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J17']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J18:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J186') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J18']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J18']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J19:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J196') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J19']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J19']['runner_type'] }}
+  #     data: ${{ inputs.data }}
+  # J20:
+  #   if: ${{ !failure() && !cancelled() && contains(fromJson(inputs.data).stage_data[inputs.stage].jobs_to_do, 'J206') }}
+  #   uses: ./.github/workflows/reusable_test.yml
+  #   with:
+  #     test_name: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J20']['job_name'] }}
+  #     runner_type: ${{ fromJson(inputs.data).stage_data[inputs.stage]['J20']['runner_type'] }}
+  #     data: ${{ inputs.data }}

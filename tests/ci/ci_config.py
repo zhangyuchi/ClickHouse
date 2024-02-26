@@ -10,6 +10,23 @@ from ci_utils import WithIter
 from integration_test_images import IMAGES
 
 
+class CIStages:
+    NA = "UNKNOWN"
+    BUILDS = "Builds"
+    TESTS = "Tests"
+    STANDALONE = "StandAlone"
+
+
+class Runners(metaclass=WithIter):
+    BUILDER = "builder"
+    STYLE_CHECKER = "style-checker"
+    STYLE_CHECKER_ARM = "style-checker-aarch64"
+    FUNC_TESTER = "func-tester"
+    FUNC_TESTER_ARM = "func-tester-aarch64"
+    STRESS_TESTER = "stress-tester"
+    FUZZER_UNIT_TESTER = "fuzzer-unit-tester"
+
+
 class Labels(metaclass=WithIter):
     """
     Label names or commit tokens in normalized form
@@ -469,6 +486,22 @@ class CIConfig:
                 return config
         return None
 
+    def get_job_ci_stage(self, job_name: str) -> str:
+        if job_name in [JobNames.STYLE_CHECK, JobNames.FAST_TEST]:
+            return CIStages.NA
+        stage_type = None
+        if self.is_build_job(job_name):
+            stage_type = CIStages.BUILDS
+            if job_name == Build.BINARY_TIDY:
+                stage_type = CIStages.STANDALONE
+        elif self.is_docs_job(job_name):
+            stage_type = CIStages.STANDALONE
+        elif self.is_test_job(job_name):
+            stage_type = CIStages.TESTS
+
+        assert stage_type, f"BUG [{job_name}]"
+        return stage_type
+
     def get_job_config(self, check_name: str) -> JobConfig:
         res = None
         for config in (
@@ -481,6 +514,62 @@ class CIConfig:
                 res = config[check_name].job_config  # type: ignore
                 break
         return res  # type: ignore
+
+    def get_runner_type(self, check_name: str) -> str:
+        result = None
+        if self.is_build_job(check_name) or check_name == JobNames.FAST_TEST:
+            result = Runners.BUILDER
+        elif any(
+            words in check_name.lower()
+            for words in [
+                "install packages",
+                "compatibility check",
+                "docker",
+                "build check",
+                "jepsen",
+                "style check",
+            ]
+        ):
+            result = Runners.STYLE_CHECKER
+        elif check_name == JobNames.DOCS_CHECK:
+            # docs job is demanding
+            result = Runners.FUNC_TESTER_ARM
+        elif any(
+            words in check_name.lower()
+            for words in [
+                "stateless",
+                "stateful",
+                "clickbench",
+                "sqllogic test",
+                "libfuzzer",
+                "bugfix validation",
+            ]
+        ):
+            result = Runners.FUNC_TESTER
+        elif any(
+            words in check_name.lower()
+            for words in ["stress", "upgrade", "integration", "performance comparison"]
+        ):
+            result = Runners.STRESS_TESTER
+        elif any(
+            words in check_name.lower()
+            for words in ["ast fuzzer", "unit tests", "sqlancer", "sqltest"]
+        ):
+            result = Runners.FUZZER_UNIT_TESTER
+
+        assert result, f"BUG, no runner for [{check_name}]"
+
+        if "aarch" in check_name and "aarch" not in result:
+            if result == Runners.STRESS_TESTER:
+                # FIXME: no arm stress tester group atm
+                result = Runners.FUNC_TESTER_ARM
+            elif result == Runners.BUILDER:
+                # crosscompile - no arm
+                pass
+            else:
+                result += "-aarch64"
+
+        return result
 
     @staticmethod
     def normalize_string(input_string: str) -> str:
@@ -564,11 +653,7 @@ class CIConfig:
 
     @classmethod
     def is_test_job(cls, job: str) -> bool:
-        return (
-            not cls.is_build_job(job)
-            and not cls.is_build_job(job)
-            and job != JobNames.STYLE_CHECK
-        )
+        return not cls.is_build_job(job) and job != JobNames.STYLE_CHECK
 
     @classmethod
     def is_docs_job(cls, job: str) -> bool:
