@@ -22,7 +22,7 @@ import json
 import base64
 import random
 
-import requests  # type: ignore
+import requests
 
 DRY_RUN_MARK = "<no url, dry run>"
 

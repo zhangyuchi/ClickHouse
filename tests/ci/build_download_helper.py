@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Callable, List, Union
 
 # isort: off
-import requests  # type: ignore
+import requests
 
 # isort: on
 
