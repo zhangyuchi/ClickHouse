@@ -14,7 +14,7 @@ services:
       - label:disable
 
   kafka1:
-    image: confluentinc/cp-kafka:5.2.0
+    image: confluentinc/cp-kafka:7.6.0
     hostname: kafka1
     ports:
       - ${KAFKA_EXTERNAL_PORT}:${KAFKA_EXTERNAL_PORT}
@@ -35,7 +35,7 @@ services:
       net.ipv4.ip_local_port_range: '55000 65535'
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:5.2.0
+    image: confluentinc/cp-schema-registry:7.6.0
     hostname: schema-registry
     ports:
       - ${SCHEMA_REGISTRY_EXTERNAL_PORT}:${SCHEMA_REGISTRY_EXTERNAL_PORT}
@@ -52,7 +52,7 @@ services:
       - label:disable
 
   schema-registry-auth:
-    image: confluentinc/cp-schema-registry:5.2.0
+    image: confluentinc/cp-schema-registry:7.6.0
     hostname: schema-registry-auth
     ports:
       - ${SCHEMA_REGISTRY_AUTH_EXTERNAL_PORT}:${SCHEMA_REGISTRY_AUTH_EXTERNAL_PORT}

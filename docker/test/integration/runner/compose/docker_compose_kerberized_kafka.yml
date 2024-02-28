@@ -2,7 +2,7 @@ version: '2.3'
 
 services:
   kafka_kerberized_zookeeper:
-    image: confluentinc/cp-zookeeper:5.2.0
+    image: confluentinc/cp-zookeeper:7.6.0
     # restart: always
     hostname: kafka_kerberized_zookeeper
     environment:
@@ -19,7 +19,7 @@ services:
       - label:disable
 
   kerberized_kafka1:
-    image: confluentinc/cp-kafka:5.2.0
+    image: confluentinc/cp-kafka:7.6.0
     # restart: always
     hostname: kerberized_kafka1
     ports:
