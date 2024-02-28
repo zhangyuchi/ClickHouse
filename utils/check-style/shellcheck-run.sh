@@ -8,7 +8,7 @@ NPROC=$(($(nproc) + 3))
 )
 
 # Check docker scripts with shellcheck
-find "$ROOT_PATH/docker" -executable -type f -exec file -F'	' --mime-type {} \; | \
-  awk -F'	' '$2==" text/x-shellscript" {print $1}' | \
+find "$ROOT_PATH/docker" -type f -exec file -F' ' --mime-type {} + | \
+  awk '$2==" text/x-shellscript" {print $1}' | \
   grep -v "compare.sh" | \
   xargs -P "$NPROC" -n 20 shellcheck
