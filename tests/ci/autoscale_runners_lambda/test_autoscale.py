@@ -4,6 +4,7 @@ import unittest
 from dataclasses import dataclass
 from typing import Any, List
 
+# pylint:disable-next=no-name-in-module
 from app import Queue, set_capacity
 
 
