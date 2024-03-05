@@ -103,6 +103,10 @@ Cluster::Address::Address(
     , shard_index(shard_index_)
     , replica_index(replica_index_)
 {
+    //Comment: 可以为replica加入permission属性，暂定有2个值，只读和读写
+    //read-only只读节点：只对外提供读服务，数据通过fetch其他replica获取
+    //read-write读写节点，对外提供读写服务，数据通过外部写入和fetch其他replica获取(如果同一shard下有多个读写副本的话)
+    //permission = config.getString(config_prefix + ".permission");
     host_name = config.getString(config_prefix + ".host");
     if (config.has(config_prefix + ".user"))
         user_specified = true;
