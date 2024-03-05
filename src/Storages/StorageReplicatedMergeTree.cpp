@@ -353,6 +353,7 @@ StorageReplicatedMergeTree::StorageReplicatedMergeTree(
 
     mutations_watch_callback = std::make_shared<Coordination::WatchCallback>(mutations_updating_task->getWatchCallback());
 
+    //comment:create merge_selecting_task to use generate MERGE_PART task
     merge_selecting_task = getContext()->getSchedulePool().createTask(
         getStorageID().getFullTableName() + " (StorageReplicatedMergeTree::mergeSelectingTask)", [this] { mergeSelectingTask(); });
 
@@ -3571,6 +3572,7 @@ bool StorageReplicatedMergeTree::scheduleDataProcessingJob(BackgroundJobsAssigne
         return false;
 
     /// This object will mark the element of the queue as running.
+    //comment: 从任务队列中获取各种任务
     ReplicatedMergeTreeQueue::SelectedEntryPtr selected_entry = selectQueueEntry();
 
     if (!selected_entry)
@@ -3590,6 +3592,7 @@ bool StorageReplicatedMergeTree::scheduleDataProcessingJob(BackgroundJobsAssigne
     }
     else if (job_type == LogEntry::MERGE_PARTS)
     {
+        //comment: call schedule MERGE_PARTS task
         auto task = std::make_shared<MergeFromLogEntryTask>(selected_entry, *this, common_assignee_trigger);
         assignee.scheduleMergeMutateTask(task);
         return true;
@@ -3741,6 +3744,7 @@ void StorageReplicatedMergeTree::mergeSelectingTask()
             merger_mutator.selectPartsToMerge(future_merged_part, false, max_source_parts_size_for_merge, *merge_pred,
                 merge_with_ttl_allowed, NO_TRANSACTION_PTR, out_reason, &partitions_to_merge_in) == SelectPartsDecision::SELECTED)
         {
+            //COMMENT:push MERGE_PARTS Task to ZK
             create_result = createLogEntryToMergeParts(
                 zookeeper,
                 future_merged_part->parts,

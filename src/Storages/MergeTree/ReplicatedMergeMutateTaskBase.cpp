@@ -178,7 +178,12 @@ bool ReplicatedMergeMutateTaskBase::executeImpl()
 
             /// Avoid rescheduling, execute fetch here, in the same thread.
             if (!prepare_result.prepared_successfully)
+            {
+                //Comment: 如何prepare不成功，则merge转为call storage.execute_fetch
+                //1. if notfound part to fetch(概率很大), throw 'No active replica' exception, next prepare will call execute_fetch again
+                //2. if find part, call fetchPart
                 return execute_fetch(prepare_result.need_to_check_missing_part_in_fetch);
+            }
 
             state = State::NEED_EXECUTE_INNER_MERGE;
             return true;

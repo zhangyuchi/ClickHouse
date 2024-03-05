@@ -74,6 +74,7 @@ std::optional<String> ReplicatedMergeTreeMergeStrategyPicker::pickReplicaToExecu
 
     std::lock_guard lock(mutex);
 
+    //comment: 区分读写副本方案下，此处active_replicas应该改成write_replicas
     auto num_replicas = active_replicas.size();
 
     if (num_replicas == 0)
