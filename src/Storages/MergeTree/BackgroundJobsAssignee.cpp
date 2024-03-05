@@ -51,7 +51,7 @@ void BackgroundJobsAssignee::postpone()
     holder->scheduleAfter(next_time_to_execute, false);
 }
 
-
+//Comment:schedule merge task
 bool BackgroundJobsAssignee::scheduleMergeMutateTask(ExecutableTaskPtr merge_task)
 {
     bool res = getContext()->getMergeMutateExecutor()->trySchedule(merge_task);
@@ -59,7 +59,7 @@ bool BackgroundJobsAssignee::scheduleMergeMutateTask(ExecutableTaskPtr merge_tas
     return res;
 }
 
-
+//Comment:schedule fetch task
 bool BackgroundJobsAssignee::scheduleFetchTask(ExecutableTaskPtr fetch_task)
 {
     bool res = getContext()->getFetchesExecutor()->trySchedule(fetch_task);

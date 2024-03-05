@@ -138,6 +138,7 @@ bool MergeTreeBackgroundExecutor<Queue>::trySchedule(ExecutableTaskPtr task)
     if (value.load() >= static_cast<int64_t>(max_tasks_count))
         return false;
 
+    //COMMENT:push merge task into queue
     pending.push(std::make_shared<TaskRuntimeData>(std::move(task), metric));
 
     has_tasks.notify_one();
@@ -341,10 +342,11 @@ void MergeTreeBackgroundExecutor<Queue>::threadFunction()
                 if (shutdown)
                     break;
 
+                //COMMENT: get merge task from queue
                 item = std::move(pending.pop());
                 active.push_back(item);
             }
-
+            //Comment: execute merge task
             routine(std::move(item));
         }
         catch (...)

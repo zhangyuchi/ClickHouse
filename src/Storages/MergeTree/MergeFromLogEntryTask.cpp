@@ -47,6 +47,7 @@ ReplicatedMergeMutateTaskBase::PrepareResult MergeFromLogEntryTask::prepare()
     int32_t metadata_version = metadata_snapshot->getMetadataVersion();
     const auto storage_settings_ptr = storage.getSettings();
 
+    //COMMENT: 可以让此副本始终不进行merge
     if (storage_settings_ptr->always_fetch_merged_part)
     {
         LOG_INFO(log, "Will fetch part {} because setting 'always_fetch_merged_part' is true", entry.new_part_name);
@@ -358,6 +359,13 @@ bool MergeFromLogEntryTask::finalize(ReplicatedMergeMutateTaskBase::PartLogWrite
 
     try
     {
+        //
+        //COMMENT: 如何获取merge后的part
+        //1、这里的commit并不会提交一个GET_PART任务到zk上，这与insert流程不一样
+        //2、其他副本如何拿到这个新生成的part呢？
+        //2.1、发起merge任务时，每个副本都会执行这个merge任务，虽然2小时内会由一个选定的副本执行，但是另一个副本的merge任务不会删除
+        //2.2、一个副本执行完后，产生新part。另一个副本应该会定期检查到这个新part的存在，并去下载。具体代码在[TODO...]
+        //
         storage.checkPartChecksumsAndCommit(*transaction_ptr, part);
     }
     catch (const Exception & e)
