@@ -86,6 +86,7 @@ std::vector<Connection *> HedgedConnectionsFactory::getManyConnections(PoolMode 
     }
 
     std::vector<Connection *> connections;
+    //
     connections.reserve(max_entries);
     Connection * connection = nullptr;
 

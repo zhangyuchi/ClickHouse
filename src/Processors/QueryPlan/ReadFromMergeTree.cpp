@@ -286,6 +286,7 @@ ReadFromMergeTree::ReadFromMergeTree(
         output_stream->header.insert({type->createColumn(), type, "_sample_factor"});
     }
 
+    //Comment:这个值根据canUseParallelReplicasOnFollower设置
     if (is_parallel_reading_from_replicas)
     {
         all_ranges_callback = context->getMergeTreeAllRangesCallback();

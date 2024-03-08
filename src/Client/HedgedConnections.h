@@ -18,7 +18,8 @@ namespace ErrorCodes
     extern const int LOGICAL_ERROR;
 }
 
-
+//Comment:从这个注释和实现来看，HedgedConnections为了降低延迟时间，在第一个副本没响应后立即向其他副本发请求(待确认)
+//Comment:同时如果factory返回了多个连接（根据poolmode和是否设置了max_parallel_replicas），则请求就会发送给多个连接
 /** To receive data from multiple replicas (connections) from one shard asynchronously.
   * The principe of Hedged Connections is used to reduce tail latency:
   * if we don't receive data from replica and there is no progress in query execution

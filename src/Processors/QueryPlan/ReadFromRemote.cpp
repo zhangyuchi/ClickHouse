@@ -254,6 +254,7 @@ void ReadFromRemote::addPipe(Pipes & pipes, const ClusterProxy::SelectStreamFact
     }
 
     /// parallel replicas custom key case
+    //Comment:从这里看会根据不同的条件选择不同的poolmode
     if (shard.shard_filter_generator)
     {
         for (size_t i = 0; i < shard.shard_info.per_replica_pools.size(); ++i)
@@ -310,6 +311,7 @@ void ReadFromRemote::addPipe(Pipes & pipes, const ClusterProxy::SelectStreamFact
 
         if (context->canUseTaskBasedParallelReplicas())
         {
+            // Comment:用了并行副本优化，反而只能把请求发给一个副本，在由这个副本把请求转给其他副本，这也是本地副本表的逻辑。
             // when doing parallel reading from replicas (ParallelReplicasMode::READ_TASKS) on a shard:
             // establish a connection to a replica on the shard, the replica will instantiate coordinator to manage parallel reading from replicas on the shard.
             // The coordinator will return query result from the shard.
@@ -319,7 +321,10 @@ void ReadFromRemote::addPipe(Pipes & pipes, const ClusterProxy::SelectStreamFact
             remote_query_executor->setPoolMode(PoolMode::GET_ONE);
         }
         else
+        {
+            //Comment:在没有开并行副本读优化时，反而可以取max_parallel_replicas个，看配置值。
             remote_query_executor->setPoolMode(PoolMode::GET_MANY);
+        }
 
         if (!table_func_ptr)
             remote_query_executor->setMainTable(shard.main_table ? shard.main_table : main_table);

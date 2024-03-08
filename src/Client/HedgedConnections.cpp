@@ -50,6 +50,7 @@ HedgedConnections::HedgedConnections(
         return;
 
     offset_states.reserve(connections.size());
+    //Comment: 从以下代码来看，每个offset_states只会添加一个副本
     for (size_t i = 0; i != connections.size(); ++i)
     {
         offset_states.emplace_back();
@@ -197,6 +198,7 @@ void HedgedConnections::sendQuery(
         replica.packet_receiver->setTimeout(hedged_connections_factory.getConnectionTimeouts().receive_timeout);
     };
 
+    //Comment:从这个代码看，是每个offset都会发送同样的请求
     for (auto & offset_status : offset_states)
         for (auto & replica : offset_status.replicas)
             send_query(replica);
@@ -499,6 +501,7 @@ void HedgedConnections::startNewReplica()
     if (state == HedgedConnectionsFactory::State::NOT_READY && hedged_connections_factory.numberOfProcessingReplicas() == 1)
         epoll.add(hedged_connections_factory.getFileDescriptor());
 
+    //Comment:这个会导致offset_states的offset中包含多个副本？
     processNewReplicaState(state, connection);
 }
 
